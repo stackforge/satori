@@ -226,8 +226,8 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (
-        'man/openstack',
-        'openstack',
+        'man/satori',
+        'satori',
         u'OpenStack Configuration Discovery',
         [u'OpenStack contributors'],
         1,
