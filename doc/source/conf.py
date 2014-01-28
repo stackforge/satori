@@ -194,7 +194,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual])
 # .
 latex_documents = [
-    ('index', 'Waldo.tex',
+    ('index', 'Satori.tex',
     u'OpenStack Configuration Discovery Documentation',
     u'OpenStack', 'manual'),
 ]
