@@ -1,4 +1,4 @@
-Waldo - Configuration Discovery
+Satori - Configuration Discovery
 ===============================
 
 [intended for OpenStack and to be proposed as an OpenStack project]
@@ -17,5 +17,5 @@ We expect that the output of such a tool - configuration information - could be 
 
 
 ## Links
-- [wiki](https://wiki.openstack.org/Waldo)
-- [Launchpad project](https://launchpad.net/waldo)
+- [wiki](https://wiki.openstack.org/Satori)
+- [Launchpad project](https://launchpad.net/satori)
