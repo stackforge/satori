@@ -13,15 +13,34 @@
 #   under the License.
 #
 
-"""Command-line interface to the OpenStack APIs"""
+"""Command-line interface to Configuration Discovery
+
+
+    TODO(zns): testing, refactoring, etc...  just using this to demonstrate
+    functionality
+
+
+"""
 
 from __future__ import print_function
 
+import socket
 import sys
+import urlparse
+
+
+def resolve_hostname(host):
+    """Get IP address of hostname or URL.
+    """
+    parsed = urlparse.urlparse(host)
+    hostname = parsed.netloc or parsed.path
+    address = socket.gethostbyname(hostname)
+    return address
 
 
 def main(argv=sys.argv[1:]):
-    print("Hello world!")
+    """Demonstrating usage."""
+    print(u"IP Address: %s" % resolve_hostname(argv[0]))
 
 
 if __name__ == "__main__":

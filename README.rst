@@ -32,6 +32,11 @@ Unit tests can be ran simply by running::
    run_tests.sh
 
 
+Example uses:
+
+    $ satori foo.com
+    IP Address: 192.168.10.12
+
 
 Links
 =====
