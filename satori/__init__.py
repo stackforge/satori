@@ -15,7 +15,7 @@ __all__ = ['__version__']
 
 import pbr.version
 
-from .shell import main
+from satori.shell import main
 
 
 version_info = pbr.version.VersionInfo('satori')
