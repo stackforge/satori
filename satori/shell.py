@@ -79,6 +79,7 @@ def main(argv=sys.argv[1:]):
 
     else:
         print(u"Host not found")
+    return 0
 
 
 if __name__ == "__main__":

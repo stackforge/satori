@@ -15,8 +15,19 @@ __all__ = ['__version__']
 
 import pbr.version
 
+from .shell import main
+
+
 version_info = pbr.version.VersionInfo('satori')
 try:
     __version__ = version_info.version_string()
 except AttributeError:
     __version__ = None
+
+def discover(address=None):
+    """Temporary to demo python API.
+
+    TODO(zns): make it read
+    """
+    main(argv=[address])
+    return {'address': address, 'other info': '...'}
