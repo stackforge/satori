@@ -24,9 +24,12 @@
 
 from __future__ import print_function
 
+import os
 import socket
 import sys
 import urlparse
+
+from novaclient.v1_1 import client
 
 
 def resolve_hostname(host):
@@ -38,9 +41,44 @@ def resolve_hostname(host):
     return address
 
 
+def find_nova_host(address):
+    nova = client.Client(os.environ['OS_USERNAME'],
+                         os.environ['OS_PASSWORD'],
+                         os.environ['OS_TENANT_ID'],
+                         os.environ['OS_AUTH_URL'],
+                         region_name=os.environ['OS_REGION_NAME'],
+                         service_type="compute")
+    for server in nova.servers.list():
+        for network_addresses in server.addresses.itervalues():
+            for ipaddress in network_addresses:
+                if ipaddress['addr'] == address:
+                    return server
+
+
 def main(argv=sys.argv[1:]):
     """Demonstrating usage."""
-    print(u"IP Address: %s" % resolve_hostname(argv[0]))
+    address = resolve_hostname(argv[0])
+    print(u"Address:\n\t%s resolves to IPv4 address %s" % (
+          argv[0], address))
+    server = find_nova_host(address) if 'OS_USERNAME' in os.environ else None
+    if server:
+        print(u"Host:\n\t%s (%s) is hosted on a Nova instance" % (address,
+                                                                  argv[0]))
+
+        print(u"\tInstance Information:")
+        print(u"\t\tURI: %s" % [l['href'] for l in server.links
+                                if l['rel'] == 'self'][0])
+        print(u"\t\tName: %s" % server.name)
+        print(u"\t\tID: %s" % server.id)
+
+        print(u"\tip-addresses:")
+        for name, addresses in server.addresses.iteritems():
+            print(u"\t\t%s:" % name)
+            for server_address in addresses:
+                print(u"\t\t\t%s:" % server_address['addr'])
+
+    else:
+        print(u"Host not found")
 
 
 if __name__ == "__main__":
