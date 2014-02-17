@@ -6,7 +6,7 @@ Satori - Configuration Discovery
 Satori provides configuration discovery for existing infrastructure. It is
 a `related OpenStack project`_.
 
-The charter for the project is focus narrowly on discovering pre-existing
+The charter for the project is to focus narrowly on discovering pre-existing
 infrastructure and installed or running software. For example, given a URL and
 some credentials, discover which resources (load balancer and servers) the URL
 is hosted on and what software is running on those servers.
