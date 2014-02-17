@@ -25,7 +25,7 @@ Code is hosted `on GitHub`_. Submit bugs to the satori project
 on  `Launchpad`_. Submit code to the openstack/satori project
 using `Gerrit`_.
 
-.. _on GitHub: https://github.com/openstack/satori
+.. _on GitHub: https://github.com/stackforge/satori
 .. _Launchpad: https://launchpad.net/satori
 .. _Gerrit: http://wiki.openstack.org/GerritWorkflow
 
