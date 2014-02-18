@@ -13,33 +13,101 @@
 #   under the License.
 #
 
-"""Command-line interface to Configuration Discovery
+"""Command-line interface to Configuration Discovery.
 
-
-    TODO(zns): testing, refactoring, etc...  just using this to demonstrate
-    functionality
+Accept a network location, run through the discovery process and report the
+findings back to the user.
 
 """
 
 from __future__ import print_function
 
+import argparse
+import os
 import sys
 
 from satori import discovery
 
 
-def main(argv=sys.argv[1:]):
-    """Demonstrating usage."""
-    if (not isinstance(argv, list)) or len(argv) < 1:
-        print("No address supplied. Usage: satori [address | name | url]")
-        return -1
+def main():
+    """Discover an existing configuration for a network location."""
+    parser = argparse.ArgumentParser(description='Configuration discovery.')
+    parser.add_argument(
+        'netloc',
+        help='Network location. E.g. https://domain.com, sub.domain.com, or '
+             '4.3.2.1'
+    )
+    openstack_group = parser.add_argument_group(
+        'OpenStack Settings',
+        'Cloud credentials, settings and endpoints. If a network location is '
+        'found to be hosted on the tenant additional information is provided.'
+    )
 
-    if '-h' in argv or '--help' in argv:
-        print("Usage: satori [address | name | url]")
-        return 0
+    openstack_group.add_argument(
+        '--os-username',
+        dest='username',
+        default=os.environ.get('OS_USERNAME'),
+        help='OpenStack Auth username. Defaults to env[OS_USERNAME].'
+    )
+    openstack_group.add_argument(
+        '--os-password',
+        dest='password',
+        default=os.environ.get('OS_PASSWORD'),
+        help='OpenStack Auth password. Defaults to env[OS_PASSWORD].'
+    )
+    openstack_group.add_argument(
+        '--os-region-name',
+        dest='region',
+        default=os.environ.get('OS_REGION_NAME'),
+        help='OpenStack region. Defaults to env[OS_REGION_NAME].'
+    )
+    openstack_group.add_argument(
+        '--os-auth-url',
+        dest='authurl',
+        default=os.environ.get('OS_AUTH_URL'),
+        help='OpenStack Auth endpoint. Defaults to env[OS_AUTH_URL].'
+    )
+    openstack_group.add_argument(
+        '--os-compute-api-version',
+        dest='compute_api_version',
+        default=os.environ.get('OS_COMPUTE_API_VERSION', '1.1'),
+        help='OpenStack Compute API version. Defaults to '
+             'env[OS_COMPUTE_API_VERSION] or 1.1.'
+    )
 
-    results = discovery.run(argv[0])
-    output_results(argv[0], results)
+    # Tenant name or ID can be supplied
+    tenant_group = openstack_group.add_mutually_exclusive_group()
+    tenant_group.add_argument(
+        '--os-tenant-name',
+        dest='tenant_name',
+        default=os.environ.get('OS_TENANT_NAME'),
+        help='OpenStack Auth tenant name. Defaults to env[OS_TENANT_NAME].'
+    )
+    tenant_group.add_argument(
+        '--os-tenant-id',
+        dest='tenant_id',
+        default=os.environ.get('OS_TENANT_ID'),
+        help='OpenStack Auth tenant ID. Defaults to env[OS_TENANT_ID].'
+    )
+
+    args = parser.parse_args()
+
+    # argparse lacks a method to say "if this option is set, require these too"
+    required_to_access_cloud = [
+        args.username,
+        args.password,
+        args.authurl,
+        args.region,
+        args.tenant_name or args.tenant_id,
+    ]
+    if args.username and not all(required_to_access_cloud):
+        parser.error("To connect to an OpenStack cloud you must supply a "
+                     "username, password, authentication enpoind, region and "
+                     "tenant. Either provide all of these settings or none of "
+                     "them.")
+
+    results = discovery.run(args.netloc, args)
+    output_results(args.netloc, results)
     return 0
 
 
@@ -78,4 +146,4 @@ def output_results(discovered_target, results):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())
