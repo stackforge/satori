@@ -44,27 +44,32 @@ def main():
     )
 
     openstack_group.add_argument(
-        '--username',
+        '--os-username',
+        dest='username',
         default=os.environ.get('OS_USERNAME'),
         help='OpenStack Auth username. Defaults to env[OS_USERNAME].'
     )
     openstack_group.add_argument(
-        '--password',
+        '--os-password',
+        dest='password',
         default=os.environ.get('OS_PASSWORD'),
         help='OpenStack Auth password. Defaults to env[OS_PASSWORD].'
     )
     openstack_group.add_argument(
-        '--region',
+        '--os-region-name',
+        dest='region',
         default=os.environ.get('OS_REGION_NAME'),
         help='OpenStack region. Defaults to env[OS_REGION_NAME].'
     )
     openstack_group.add_argument(
-        '--authurl',
+        '--os-auth-url',
+        dest='authurl',
         default=os.environ.get('OS_AUTH_URL'),
         help='OpenStack Auth endpoint. Defaults to env[OS_AUTH_URL].'
     )
     openstack_group.add_argument(
-        '--compute-api-version',
+        '--os-compute-api-version',
+        dest='compute_api_version',
         default=os.environ.get('OS_COMPUTE_API_VERSION', '1.1'),
         help='OpenStack Compute API version. Defaults to '
              'env[OS_COMPUTE_API_VERSION] or 1.1.'
@@ -73,12 +78,14 @@ def main():
     # Tenant name or ID can be supplied
     tenant_group = openstack_group.add_mutually_exclusive_group()
     tenant_group.add_argument(
-        '--tenant',
+        '--os-tenant-name',
+        dest='tenant_name',
         default=os.environ.get('OS_TENANT_NAME'),
         help='OpenStack Auth tenant name. Defaults to env[OS_TENANT_NAME].'
     )
     tenant_group.add_argument(
-        '--tenant-id',
+        '--os-tenant-id',
+        dest='tenant_id',
         default=os.environ.get('OS_TENANT_ID'),
         help='OpenStack Auth tenant ID. Defaults to env[OS_TENANT_ID].'
     )
@@ -91,7 +98,7 @@ def main():
         args.password,
         args.authurl,
         args.region,
-        args.tenant or args.tenant_id,
+        args.tenant_name or args.tenant_id,
     ]
     if args.username and not all(required_to_access_cloud):
         parser.error("To connect to an OpenStack cloud you must supply a "
