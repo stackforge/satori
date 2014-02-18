@@ -26,30 +26,30 @@ Example usage:
 
 from __future__ import print_function
 
-import os
 import socket
 import urlparse
 
 from novaclient.v1_1 import client
 
 
-def run(address):
+def run(address, config):
     """Run discovery and return results."""
     results = {}
     ipaddress = resolve_hostname(address)
     results['address'] = ipaddress
 
-    server = find_nova_host(ipaddress) if 'OS_USERNAME' in os.environ else None
-    if server:
-        host = {'type': 'Nova instance'}
+    if config.username is not None:
+        server = find_nova_host(ipaddress, config)
+        if server:
+            host = {'type': 'Nova instance'}
 
-        host['uri'] = [l['href'] for l in server.links
-                       if l['rel'] == 'self'][0]
-        host['name'] = server.name
-        host['id'] = server.id
+            host['uri'] = [l['href'] for l in server.links
+                           if l['rel'] == 'self'][0]
+            host['name'] = server.name
+            host['id'] = server.id
 
-        host['addresses'] = server.addresses
-        results['host'] = host
+            host['addresses'] = server.addresses
+            results['host'] = host
     return results
 
 
@@ -61,13 +61,13 @@ def resolve_hostname(host):
     return address
 
 
-def find_nova_host(address):
+def find_nova_host(address, config):
     """See if a nova instance has the supplied address."""
-    nova = client.Client(os.environ['OS_USERNAME'],
-                         os.environ['OS_PASSWORD'],
-                         os.environ['OS_TENANT_ID'],
-                         os.environ['OS_AUTH_URL'],
-                         region_name=os.environ['OS_REGION_NAME'],
+    nova = client.Client(config.username,
+                         config.password,
+                         config.tenant_id,
+                         config.authurl,
+                         region_name=config.region,
                          service_type="compute")
     for server in nova.servers.list():
         for network_addresses in server.addresses.itervalues():
