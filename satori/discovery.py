@@ -27,16 +27,17 @@ Example usage:
 from __future__ import print_function
 
 import os
-import socket
-import urlparse
 
 from novaclient.v1_1 import client
+
+from satori import dns
 
 
 def run(address):
     """Run discovery and return results."""
     results = {}
-    ipaddress = resolve_hostname(address)
+    ipaddress = dns.resolve_hostname(address)
+    results['domain'] = dns.domain_info(address)
     results['address'] = ipaddress
 
     server = find_nova_host(ipaddress) if 'OS_USERNAME' in os.environ else None
@@ -51,14 +52,6 @@ def run(address):
         host['addresses'] = server.addresses
         results['host'] = host
     return results
-
-
-def resolve_hostname(host):
-    """Get IP address of hostname or URL."""
-    parsed = urlparse.urlparse(host)
-    hostname = parsed.netloc or parsed.path
-    address = socket.gethostbyname(hostname)
-    return address
 
 
 def find_nova_host(address):

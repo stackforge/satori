@@ -48,6 +48,15 @@ def output_results(discovered_target, results):
     address = results['address']
     print(u"Address:\n\t%s resolves to IPv4 address %s" % (
           discovered_target, address))
+
+    if 'domain' in results:
+        print(u"Domain: %s" % results['domain']['name'])
+        print(u"\tRegistrar: %s" % results['domain']['registrar'])
+        print(u"\tNameservers: %s" % (
+            ", ".join(results['domain']['nameservers'])
+        ))
+        print(u"\tExpires: %d days" % results['domain']['days_until_expires'])
+
     if 'host' in results:
         host = results['host']
         print(u"Host:\n\t%s (%s) is hosted on a %s" % (
