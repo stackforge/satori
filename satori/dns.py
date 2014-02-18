@@ -52,7 +52,6 @@ def domain_info(domain):
     """Get as much information as possible for a given domain name."""
     domain = get_registered_domain(domain)
     result = pythonwhois.get_whois(domain)
-    #import ipdb; ipdb.set_trace()
     expires = result['expiration_date'][0]
     days_until_expires = (expires - datetime.datetime.now()).days
     return {
