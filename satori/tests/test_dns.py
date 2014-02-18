@@ -18,10 +18,9 @@ from freezegun import freeze_time
 import mock
 import pythonwhois
 
-
-from satori.tests import utils
 from satori import dns
 from satori import errors
+from satori.tests import utils
 
 
 class TestDNS(utils.TestCase):
@@ -171,6 +170,13 @@ class TestDNS(utils.TestCase):
 
     def test_domain_info_returns_domain_name_from_parameter(self):
         data = dns.domain_info(self.domain)
+        self.assertEqual(
+            self.domain,
+            data['name']
+        )
+
+    def test_domain_info_returns_slimmed_down_domain_name(self):
+        data = dns.domain_info("s1.www." + self.domain)
         self.assertEqual(
             self.domain,
             data['name']

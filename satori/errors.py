@@ -12,12 +12,16 @@
 #
 """Satori Discovery Errors."""
 
+
 class SatoriException(Exception):
-	def __init__(self, value):
-		self.value = value
-	def __str__(self):
-		return repr(self.value)
+    """Parent class for Satori exceptions that accept a str description."""
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
 
 class SatoriInvalidNetloc(SatoriException):
-	pass
-
+    """Netloc that cannot be parsed by `urlparse`."""
+    pass
