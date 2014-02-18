@@ -31,13 +31,23 @@ Run::
    Address:
      foo.com resolves to IPv4 address 4.4.4.4
 
-Allow for deeper discovery by setting OpenStack tenant environment variables::
+Deeper discovery is available if the network location (IP or hostname) is
+hosted on an OpenStack cloud tenant that Satori can access. Cloud settings can
+be passed in on the command line or via `OpenStack tenant environment
+variables`_::
+
+   $ satori foo.com --os-username yourname --os-password yadayadayada --os-tenant-name myproject --os-auth-url http://...
+
+Or::
 
    $ export OS_USERNAME=yourname
    $ export OS_PASSWORD=yadayadayada
    $ export OS_TENANT_NAME=myproject
    $ export OS_AUTH_URL=http://...
    $ satori foo.com
+
+Notice the discovery result now contains a ``Host`` section::
+
    Address:
        www.foo.com resolves to IPv4 address 4.4.4.4
    Host:
@@ -54,10 +64,11 @@ Allow for deeper discovery by setting OpenStack tenant environment variables::
            private:
                10.1.1.156
 
+
 Documentation
 =============
 
-Additional documentation is located in the `doc` directory and is hosted at
+Additional documentation is located in the ``doc/`` directory and is hosted at
 http://satori.readthedocs.org/.
 
 Start Hacking
