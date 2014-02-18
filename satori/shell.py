@@ -13,33 +13,33 @@
 #   under the License.
 #
 
-"""Command-line interface to Configuration Discovery
+"""Command-line interface to Configuration Discovery.
 
-
-    TODO(zns): testing, refactoring, etc...  just using this to demonstrate
-    functionality
+Accept a network location, run through the discovery process and report the
+findings back to the user.
 
 """
 
 from __future__ import print_function
 
+import argparse
 import sys
 
 from satori import discovery
 
 
-def main(argv=sys.argv[1:]):
-    """Demonstrating usage."""
-    if (not isinstance(argv, list)) or len(argv) < 1:
-        print("No address supplied. Usage: satori [address | name | url]")
-        return -1
+def main():
+    """Discover an existing configuration for a network location."""
+    parser = argparse.ArgumentParser(description='Configuration discovery.')
+    parser.add_argument(
+        'netloc',
+        help='Network location. E.g. https://domain.com, sub.domain.com, or '
+             '4.3.2.1'
+    )
 
-    if '-h' in argv or '--help' in argv:
-        print("Usage: satori [address | name | url]")
-        return 0
-
-    results = discovery.run(argv[0])
-    output_results(argv[0], results)
+    args = parser.parse_args()
+    results = discovery.run(args.netloc)
+    output_results(args.netloc, results)
     return 0
 
 
@@ -69,4 +69,4 @@ def output_results(discovered_target, results):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())
