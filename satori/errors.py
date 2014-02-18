@@ -24,6 +24,7 @@ class SatoriException(Exception):
     def __init__(self, message):
         """Store error message."""
         self.message = message
+        super(SatoriException, self).__init__()
 
     def __str__(self):
         """Display error message."""
@@ -32,4 +33,3 @@ class SatoriException(Exception):
 
 class SatoriInvalidNetloc(SatoriException):
     """Netloc that cannot be parsed by `urlparse`."""
-    pass
