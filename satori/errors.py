@@ -14,12 +14,20 @@
 
 
 class SatoriException(Exception):
-    """Parent class for Satori exceptions that accept a str description."""
-    def __init__(self, value):
-        self.value = value
+
+    """Parent class for Satori exceptions.
+
+    Accepts a string error message that that accept a str description.
+
+    """
+
+    def __init__(self, message):
+        """Store error message."""
+        self.message = message
 
     def __str__(self):
-        return repr(self.value)
+        """Display error message."""
+        return repr(self.message)
 
 
 class SatoriInvalidNetloc(SatoriException):

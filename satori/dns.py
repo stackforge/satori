@@ -27,7 +27,6 @@ LOG = logging.getLogger(__name__)
 
 def resolve_hostname(host):
     """Get IP address of hostname or URL."""
-
     try:
         parsed = urlparse.urlparse(host)
     except AttributeError as err:
