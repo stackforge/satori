@@ -27,6 +27,7 @@ Example usage:
 from __future__ import print_function
 
 from novaclient.v1_1 import client
+import six
 
 from satori import dns
 
@@ -62,7 +63,7 @@ def find_nova_host(address, config):
                          region_name=config.region,
                          service_type="compute")
     for server in nova.servers.list():
-        for network_addresses in server.addresses.itervalues():
+        for network_addresses in six.itervalues(server.addresses):
             for ipaddress in network_addresses:
                 if ipaddress['addr'] == address:
                     return server

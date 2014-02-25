@@ -15,8 +15,8 @@
 import datetime
 import logging
 import socket
-import urlparse
 
+from six.moves.urllib import parse as urlparse
 import pythonwhois
 import tldextract
 

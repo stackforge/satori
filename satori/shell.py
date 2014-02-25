@@ -26,6 +26,8 @@ import argparse
 import os
 import sys
 
+import six
+
 from satori import discovery
 
 
@@ -137,7 +139,7 @@ def output_results(discovered_target, results):
 
         print(u"\tip-addresses:")
         addresses = host.get('addresses') or {}
-        for name, address_list in addresses.iteritems():
+        for name, address_list in six.iteritems(addresses):
             print(u"\t\t%s:" % name)
             for server_address in address_list:
                 print(u"\t\t\t%s:" % server_address['addr'])
