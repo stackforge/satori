@@ -13,6 +13,7 @@
 """Satori DNS Discovery."""
 
 import socket
+import unittest
 
 from freezegun import freeze_time
 import mock
@@ -193,3 +194,6 @@ class TestDNS(utils.TestCase):
     def test_domain_info_returns_array_of_strings_whois_data(self):
         data = dns.domain_info(self.domain)
         self.assertIsInstance(data['whois'][0], str)
+
+if __name__ == "__main__":
+    unittest.main()
