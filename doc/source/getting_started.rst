@@ -2,11 +2,13 @@
 Getting Started
 ===============
 
-Satori is currently a simple command-line tool so that new users can discover a configuration without needing to setup additional infrastructure:
+Satori is currently a simple command-line tool so that new users can discover
+a configuration without needing to setup additional infrastructure:
 
 ::
 
-    $ satori --os-username <username> --os-password <password> --os-tenant-id <tenant-id> --os-auth-url <auth-endpoint> --os-region-name <region> www.example.com
+    $ satori --os-username <username> --os-password <password> --os-tenant-id\
+    <tenant-id> --os-auth-url <auth-endpoint> --os-region-name <region> www.example.com
     Address:
             www.example.com resolves to IPv4 address 10.1.0.44
     Domain: www.example.com
