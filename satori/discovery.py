@@ -26,6 +26,8 @@ Example usage:
 
 from __future__ import print_function
 
+import importlib
+
 from novaclient.v1_1 import client
 import six
 
@@ -50,7 +52,17 @@ def run(address, config):
             host['id'] = server.id
 
             host['addresses'] = server.addresses
+
+            if all([config.system_info, config.host_key]):
+                module_name = config.system_info
+                if '.' not in module_name:
+                    module_name = 'satori.sysinfo.%s' % module_name
+                system_info_module = importlib.import_module(module_name)
+                result = system_info_module.get_systeminfo(host, config)
+                host['system_info'] = result
+
             results['host'] = host
+
     return results
 
 
