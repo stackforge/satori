@@ -1,3 +1,4 @@
+=================================
 OpenStack Configuration Discovery
 =================================
 
@@ -8,29 +9,28 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
+   getting_started
+   contributing
    releases
 
-Getting Started
----------------
+Installation
+------------
 
-* Check out `the wiki`_
-* Read the source `on GitHub`_
+To install satori, simply run `pip install`.
 
-.. _the wiki: https://wiki.openstack.org/Satori
+::
 
-Contributing
-============
+  $ pip install satori
 
-Code is hosted `on GitHub`_. Submit bugs to the satori project
-on  `Launchpad`_. Submit code to the openstack/satori project
-using `Gerrit`_.
+Concept
+-------
 
-.. _on GitHub: https://github.com/stackforge/satori
-.. _Launchpad: https://launchpad.net/satori
-.. _Gerrit: http://wiki.openstack.org/GerritWorkflow
+* `Wiki`_
+
+.. _Wiki: https://wiki.openstack.org/Satori
 
 Index
-=====
+-----
 
 * :ref:`genindex`
 * :ref:`modindex`
