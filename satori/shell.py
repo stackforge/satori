@@ -92,7 +92,22 @@ def main():
         help='OpenStack Auth tenant ID. Defaults to env[OS_TENANT_ID].'
     )
 
+    parser.add_argument(
+        '--host-key-path',
+        type=argparse.FileType('r'),
+        help='SSH key to access Nova resources.'
+    )
+
+    parser.add_argument(
+        '--system-info',
+        help='Mechanism to use on a Nova resource to obtain system '
+             'information. E.g. ohai, facts, factor.'
+    )
+
     args = parser.parse_args()
+
+    if args.host_key_path:
+        args.host_key = args.host_key_path.read()
 
     # argparse lacks a method to say "if this option is set, require these too"
     required_to_access_cloud = [
@@ -143,6 +158,11 @@ def output_results(discovered_target, results):
             print(u"\t\t%s:" % name)
             for server_address in address_list:
                 print(u"\t\t\t%s:" % server_address['addr'])
+
+        if 'system_info' in host:
+            print(u"\tSystem Information:")
+            print(u"\t\t%s" % host['system_info'])
+
     else:
         print(u"Host not found")
 
