@@ -51,12 +51,15 @@ def domain_info(domain):
     """Get as much information as possible for a given domain name."""
     domain = get_registered_domain(domain)
     result = pythonwhois.get_whois(domain)
+    registrar = []
+    if 'registrar' in result and len(result['registrar']) > 0:
+        registrar = result['registrar'][0]
     expires = result['expiration_date'][0]
     days_until_expires = (expires - datetime.datetime.now()).days
     return {
         'name': domain,
         'whois': result['raw'],
-        'registrar': result['registrar'][0],
+        'registrar': registrar,
         'nameservers': result['nameservers'],
         'days_until_expires': days_until_expires,
     }

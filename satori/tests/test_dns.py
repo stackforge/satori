@@ -169,6 +169,22 @@ class TestDNS(utils.TestCase):
             data['registrar']
         )
 
+    def test_domain_info_returns_no_registrar_from_whois(self):
+        small_whois = ["""
+        Domain : example.io
+        Status : Live
+        Expiry : 2014-11-06
+
+        NS 1   : dns1.example.com
+        NS 2   : dns2.example.com
+        """]
+        self.mynet.get_whois_raw.return_value = small_whois
+        data = dns.domain_info(self.domain)
+        self.assertEqual(
+            [],
+            data['registrar']
+        )
+
     def test_domain_info_returns_domain_name_from_parameter(self):
         data = dns.domain_info(self.domain)
         self.assertEqual(
