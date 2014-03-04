@@ -10,8 +10,7 @@
 #   License for the specific language governing permissions and limitations
 #   under the License.
 #
-"""Discovery Module
-
+"""Discovery Module.
 
     TODO(zns): testing, refactoring, etc...  just using this to demonstrate
     functionality
@@ -20,8 +19,6 @@ Example usage:
 
     from satori import discovery
     discovery.run(address="foo.com")
-
-
 """
 
 from __future__ import print_function
