@@ -12,6 +12,7 @@
 #
 """Satori DNS Discovery."""
 
+import datetime
 import socket
 import unittest
 
@@ -210,6 +211,29 @@ class TestDNS(utils.TestCase):
     def test_domain_info_returns_array_of_strings_whois_data(self):
         data = dns.domain_info(self.domain)
         self.assertIsInstance(data['whois'][0], str)
+
+    def test_domain_info_returns_datetime_for_expiry_string(self):
+        small_whois = ["""
+        Domain : example.io
+        Status : Live
+        Expiry : 2014-11-06
+
+        NS 1   : dns1.example.com
+        NS 2   : dns2.example.com
+        """]
+        self.mynet.get_whois_raw.return_value = small_whois
+        data = dns.domain_info(self.domain)
+        self.assertIsInstance(
+            data['expiration_date'],
+            datetime.datetime
+        )
+
+    def test_domain_info_returns_datetime_for_expiration_date_string(self):
+        data = dns.domain_info(self.domain)
+        self.assertIsInstance(
+            data['expiration_date'],
+            datetime.datetime
+        )
 
 if __name__ == "__main__":
     unittest.main()
