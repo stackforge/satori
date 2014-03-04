@@ -16,8 +16,8 @@ import datetime
 import logging
 import socket
 
-from six.moves.urllib import parse as urlparse
 import pythonwhois
+from six.moves.urllib import parse as urlparse
 import tldextract
 
 from satori import errors
@@ -28,9 +28,11 @@ LOG = logging.getLogger(__name__)
 def resolve_hostname(host):
     """Get IP address of hostname or URL."""
     try:
+        if not host:
+            raise AttributeError("Host must be supplied.")
         parsed = urlparse.urlparse(host)
     except AttributeError as err:
-        error = "Hostname `%s`is unparseable. Error: %s" % (host, err)
+        error = "Hostname `%s` is unparseable. Error: %s" % (host, err)
         LOG.exception(error)
         raise errors.SatoriInvalidNetloc(error)
 
