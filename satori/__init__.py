@@ -11,6 +11,8 @@
 #   under the License.
 #
 
+"""Satori main module."""
+
 __all__ = ['__version__']
 
 import pbr.version
