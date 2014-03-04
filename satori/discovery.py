@@ -26,12 +26,11 @@ Example usage:
 
 from __future__ import print_function
 
-import importlib
-
 from novaclient.v1_1 import client
 import six
 
 from satori import dns
+from satori import utils
 
 
 def run(address, config):
@@ -57,7 +56,7 @@ def run(address, config):
                 module_name = config.system_info
                 if '.' not in module_name:
                     module_name = 'satori.sysinfo.%s' % module_name
-                system_info_module = importlib.import_module(module_name)
+                system_info_module = utils.import_object(module_name)
                 result = system_info_module.get_systeminfo(host, config)
                 host['system_info'] = result
 
