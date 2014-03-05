@@ -57,15 +57,22 @@ def domain_info(domain):
     registrar = []
     if 'registrar' in result and len(result['registrar']) > 0:
         registrar = result['registrar'][0]
-    expires = result['expiration_date'][0]
-    if not isinstance(expires, datetime.datetime):
-        expires = dateutil.parser.parse(expires)
-    days_until_expires = (expires - datetime.datetime.now()).days
+    try:
+        nameservers = result['nameservers']
+    except KeyError:
+        nameservers = {}
+    try:
+        expires = result['expiration_date'][0]
+        if not isinstance(expires, datetime.datetime):
+            expires = dateutil.parser.parse(expires)
+        days_until_expires = (expires - datetime.datetime.now()).days
+    except KeyError:
+        days_until_expires = {}
     return {
         'name': domain,
         'whois': result['raw'],
         'registrar': registrar,
-        'nameservers': result['nameservers'],
+        'nameservers': nameservers,
         'days_until_expires': days_until_expires,
         'expiration_date': expires,
     }
