@@ -163,6 +163,13 @@ class TestDNS(utils.TestCase):
             data['nameservers']
         )
 
+    def test_domain_info_returns_nameservers_as_list(self):
+        data = dns.domain_info(self.domain)
+        self.assertIsInstance(
+            data['nameservers'],
+            list
+        )
+
     def test_domain_info_returns_registrar_from_whois(self):
         data = dns.domain_info(self.domain)
         self.assertEqual(
@@ -208,6 +215,21 @@ class TestDNS(utils.TestCase):
             data['days_until_expires']
         )
 
+    def test_domain_info_returns_none_for_days_until_expires(self):
+        small_whois = ["""
+        Domain : example.io
+        Status : Live
+
+        NS 1   : dns1.example.com
+        NS 2   : dns2.example.com
+        """]
+        self.mynet.get_whois_raw.return_value = small_whois
+        data = dns.domain_info(self.domain)
+        self.assertEqual(
+            data['days_until_expires'],
+            None
+        )
+
     def test_domain_info_returns_array_of_strings_whois_data(self):
         data = dns.domain_info(self.domain)
         self.assertIsInstance(data['whois'][0], str)
@@ -233,6 +255,21 @@ class TestDNS(utils.TestCase):
         self.assertIsInstance(
             data['expiration_date'],
             datetime.datetime
+        )
+
+    def test_domain_info_returns_none_for_missing_expiration_date(self):
+        small_whois = ["""
+        Domain : example.io
+        Status : Live
+
+        NS 1   : dns1.example.com
+        NS 2   : dns2.example.com
+        """]
+        self.mynet.get_whois_raw.return_value = small_whois
+        data = dns.domain_info(self.domain)
+        self.assertEqual(
+            data['expiration_date'],
+            None
         )
 
 if __name__ == "__main__":
