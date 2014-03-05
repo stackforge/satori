@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+1: BK Box <bk@theboxes.org>
+Approved+1: Caleb Groom <caleb@calebgroom.com>
+Code-Review+2: Caleb Groom <caleb@calebgroom.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 05 Mar 2014 22:50:09 +0000
+Reviewed-on: https://review.openstack.org/77997
+Project: stackforge/satori
+Branch: refs/heads/master
