@@ -137,10 +137,14 @@ def output_results(discovered_target, results):
     if 'domain' in results:
         print(u"Domain: %s" % results['domain']['name'])
         print(u"\tRegistrar: %s" % results['domain']['registrar'])
-        print(u"\tNameservers: %s" % (
-            ", ".join(results['domain']['nameservers'])
-        ))
-        print(u"\tExpires: %d days" % results['domain']['days_until_expires'])
+        if results['domain']['nameservers']:
+            print(u"\tNameservers: %s" % (
+                  ", ".join(results['domain']['nameservers'])
+                  ))
+        if ('days_until_expires' in results['domain'] and
+                results['domain']['days_until_expires'] is not None):
+            print(u"\tExpires: %d days" %
+                  results['domain']['days_until_expires'])
 
     if 'host' in results:
         host = results['host']
