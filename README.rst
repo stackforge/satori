@@ -108,7 +108,31 @@ uses the `install virtualenv`_ script to create the virtualenv::
 
 Unit tests can be ran simply by running::
 
-   $ run_tests.sh
+   $ tox
+
+   # or, just style checks
+   $ tox -e pep8
+
+   # or, just python 2.7 checks
+   $ tox -e py27
+
+
+Running a test coverage report:
+
+   # cleanup previous runs
+   $ rm -rf cover && rm -rf covhtml && rm .coverage
+
+   # Run tests and generate the report
+   $ tox -ecover && coverage html -d covhtml -i
+
+   # open it in a broweser
+   $ open covhtml/index.html
+
+Checking test coverage::
+
+  $ tox -ecover
+  $ coverage html -d covhtml -i
+  $ open covhtml/index.html  # opens the report in a browser
 
 
 Links

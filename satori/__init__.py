@@ -9,15 +9,14 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
-#
 
 """Satori main module."""
 
-__all__ = ['__version__']
+__all__ = ('__version__')
 
 import pbr.version
 
-from satori.shell import main
+from satori import shell
 
 
 version_info = pbr.version.VersionInfo('satori')
@@ -32,5 +31,5 @@ def discover(address=None):
 
     TODO(zns): make it real
     """
-    main(argv=[address])
+    shell.main(argv=[address])
     return {'address': address, 'other info': '...'}

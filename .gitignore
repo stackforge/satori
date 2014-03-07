@@ -24,6 +24,7 @@ pip-log.txt
 
 # Unit test / coverage reports
 .coverage
+.coverage.*
 cover
 covhtml
 .tox
@@ -46,11 +47,11 @@ nosetests.xml
 *.swo
 *.swp
 *~
-.coverage
 .satori-venv
 .testrepository
 .tox
 .venv
+venv
 AUTHORS
 build
 ChangeLog

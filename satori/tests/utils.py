@@ -15,9 +15,9 @@
 #
 
 import os
+import sys
 
 import fixtures
-import sys
 import testtools
 
 

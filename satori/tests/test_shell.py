@@ -1,5 +1,3 @@
-# pylint: disable=C0103,R0904
-
 #   Licensed under the Apache License, Version 2.0 (the "License"); you may
 #   not use this file except in compliance with the License. You may obtain
 #   a copy of the License at
@@ -76,6 +74,11 @@ class TestArgParsing(utils.TestCase):
 
     """Test Argument Parsing."""
 
+    def setUp(self):
+        super(TestArgParsing, self).setUp()
+        self.mock_os = shell.os
+        self.mock_os.environ = {}
+
     def make_env(self, exclude=None, fake_env=FAKE_ENV):
         """Create a patched os.environ.
 
@@ -85,7 +88,7 @@ class TestArgParsing(utils.TestCase):
         env = dict((k, v) for k, v in fake_env.items() if k != exclude)
         self.useFixture(fixtures.MonkeyPatch('os.environ', env))
 
-    def shell(self, argstr, exitcodes=(0,)):
+    def run_shell(self, argstr, exitcodes=(0,)):
         """Simulate a user shell.
 
         Borrowed from python-novaclient/novaclient/tests/test_shell.py.
@@ -128,7 +131,7 @@ class TestArgParsing(utils.TestCase):
             fields_copy.append('domain.com')
             self.assertRaises(
                 errors.SatoriShellException,
-                self.shell,
+                self.run_shell,
                 ' '.join(fields_copy),
                 exitcodes=[0, 2]
             )
