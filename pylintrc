@@ -1,0 +1,11 @@
+[Messages Control]
+# W0511: TODOs in code comments are fine.
+# W0142: *args and **kwargs are fine.
+disable-msg=W0511,W0142
+
+# Don't require docstrings on tests.
+no-docstring-rgx=((__.*__)|([tT]est.*)|setUp|tearDown)$
+
+[Design]
+min-public-methods=0
+max-args=6

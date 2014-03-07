@@ -26,6 +26,8 @@ pip-log.txt
 .coverage
 .tox
 nosetests.xml
+cover
+covhtml
 
 # Translations
 *.mo
@@ -49,6 +51,7 @@ nosetests.xml
 .testrepository
 .tox
 .venv
+venv
 AUTHORS
 build
 ChangeLog

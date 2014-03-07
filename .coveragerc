@@ -1,7 +1,7 @@
 [run]
 branch = True
 source = satori
-omit = satori/openstack/*
+omit = satori/tests/*
 
 [report]
 ignore-errors = True
