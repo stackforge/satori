@@ -28,6 +28,7 @@ import sys
 
 import six
 
+from satori.common import templating
 from satori import discovery
 
 
@@ -128,8 +129,21 @@ def main():
     return 0
 
 
+def get_template(name):
+    """Get template text fromtemplates directory by name."""
+    root_dir = os.path.dirname(__file__)
+    template_path = os.path.join(root_dir, "formats", "%s.jinja" % name)
+    with open(template_path, 'r') as handle:
+        template = handle.read()
+    return template
+
+
 def output_results(discovered_target, results):
     """Print results in CLI format."""
+    template = get_template("text")
+    output = templating.parse(template, target=discovered_target, data=results)
+    print(output)
+
     address = results['address']
     print(u"Address:\n\t%s resolves to IPv4 address %s" % (
           discovered_target, address))
