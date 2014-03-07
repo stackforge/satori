@@ -108,6 +108,8 @@ def main():
 
     if args.host_key_path:
         args.host_key = args.host_key_path.read()
+    else:
+        args.host_key = None
 
     # argparse lacks a method to say "if this option is set, require these too"
     required_to_access_cloud = [
