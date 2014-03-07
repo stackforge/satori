@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Ziad Sawalha <ziad.sawalha@rackspace.com>
+Code-Review+2: Ziad Sawalha <ziad.sawalha@rackspace.com>
+Code-Review+1: Caleb Groom <caleb@calebgroom.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 07 Mar 2014 17:24:16 +0000
+Reviewed-on: https://review.openstack.org/78434
+Project: stackforge/satori
+Branch: refs/heads/master
