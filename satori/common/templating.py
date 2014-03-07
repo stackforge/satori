@@ -18,7 +18,7 @@ import json
 import logging
 
 import jinja2
-from jinja2.sandbox import ImmutableSandboxedEnvironment
+from jinja2 import sandbox
 import six
 
 CODE_CACHE = {}
@@ -79,8 +79,9 @@ def preserve_linefeeds(value):
 def get_jinja_environment(template, extra_globals=None):
     """Return a sandboxed jinja environment."""
     template_map = {'template': template}
-    env = ImmutableSandboxedEnvironment(loader=jinja2.DictLoader(template_map),
-                                        bytecode_cache=CompilerCache())
+    env = sandbox.ImmutableSandboxedEnvironment(
+        loader=jinja2.DictLoader(template_map),
+        bytecode_cache=CompilerCache())
     env.filters['prepend'] = do_prepend
     env.filters['preserve'] = preserve_linefeeds
     env.globals['json'] = json

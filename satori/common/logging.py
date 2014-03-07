@@ -31,6 +31,11 @@ class DebugFormatter(logging.Formatter):
 
     Outputs any 'data' values passed in the 'extra' parameter if provided.
 
+    **Example**:
+
+    .. code-block:: python
+
+        LOG.debug("My message", extra={'data': locals()})
     """
 
     def format(self, record):
@@ -46,7 +51,8 @@ def init_logging(config, default_config=None):
 
     Turn on console logging if no logging files found
 
-    :param config: object with configuration namespace (argparse parser)
+    :param config: object with configuration namespace (ex. argparse parser)
+    :keyword default_config: path to a python logging configuration file
     """
     if config.logconfig and os.path.isfile(config.logconfig):
         logging.config.fileConfig(config.logconfig,
@@ -74,6 +80,8 @@ def log_level(config):
     --verbose: turn up logging output (logging.DEBUG)
     --quiet: turn down logging output (logging.WARNING)
     default is logging.INFO
+
+    :param config: object with configuration namespace (ex. argparse parser)
     """
     if config.debug is True:
         return logging.DEBUG
@@ -95,6 +103,7 @@ def get_debug_formatter(config):
     --quiet: turn down logging output (logging.WARNING)
     default is logging.INFO
 
+    :param config: object with configuration namespace (ex. argparse parser)
     """
     if config.debug is True:
         return DebugFormatter('%(pathname)s:%(lineno)d: %(levelname)-8s '
@@ -109,7 +118,10 @@ def get_debug_formatter(config):
 
 
 def init_console_logging(config):
-    """Log to console."""
+    """Enable logging to the console.
+
+    :param config: object with configuration namespace (ex. argparse parser)
+    """
     # define a Handler which writes messages to the sys.stderr
     console = find_console_handler(logging.getLogger())
     if not console:
