@@ -26,8 +26,7 @@ import argparse
 import os
 import sys
 
-import six
-
+from satori.common import templating
 from satori import discovery
 
 
@@ -128,46 +127,20 @@ def main():
     return 0
 
 
+def get_template(name):
+    """Get template text fromtemplates directory by name."""
+    root_dir = os.path.dirname(__file__)
+    template_path = os.path.join(root_dir, "formats", "%s.jinja" % name)
+    with open(template_path, 'r') as handle:
+        template = handle.read()
+    return template
+
+
 def output_results(discovered_target, results):
     """Print results in CLI format."""
-    address = results['address']
-    print(u"Address:\n\t%s resolves to IPv4 address %s" % (
-          discovered_target, address))
-
-    if 'domain' in results:
-        print(u"Domain: %s" % results['domain']['name'])
-        print(u"\tRegistrar: %s" % results['domain']['registrar'])
-        if results['domain']['nameservers']:
-            print(u"\tNameservers: %s" % (
-                  ", ".join(results['domain']['nameservers'])
-                  ))
-        if results['domain'].get('days_until_expires') is not None:
-            print(u"\tExpires: %d days" %
-                  results['domain']['days_until_expires'])
-
-    if 'host' in results:
-        host = results['host']
-        print(u"Host:\n\t%s (%s) is hosted on a %s" % (
-              address, discovered_target, host['type']))
-
-        print(u"\tInstance Information:")
-        print(u"\t\tURI: %s" % host['uri'])
-        print(u"\t\tName: %s" % host['name'])
-        print(u"\t\tID: %s" % host['id'])
-
-        print(u"\tip-addresses:")
-        addresses = host.get('addresses') or {}
-        for name, address_list in six.iteritems(addresses):
-            print(u"\t\t%s:" % name)
-            for server_address in address_list:
-                print(u"\t\t\t%s:" % server_address['addr'])
-
-        if 'system_info' in host:
-            print(u"\tSystem Information:")
-            print(u"\t\t%s" % host['system_info'])
-
-    else:
-        print(u"Host not found")
+    template = get_template("text")
+    output = templating.parse(template, target=discovered_target, data=results)
+    print(output)
 
 
 if __name__ == "__main__":
