@@ -2,28 +2,19 @@
 -e git://github.com/ziadsawalha/pep8.git@19b64e1d6b52cb814e482188369f4db24e0e82c2#egg=pep8
 
 # pep257 tool with fix for updated PEP-257 and __all__ as a list
-# Two PR pending to upstream
+# One more PR pending to upstream
 -e git://github.com/ziadsawalha/pep257.git@7752b1c9977e5dfca70f7635e5bfc12442c540a6#egg=pep257
-
-# PEP-257 plugin for flake8 with pending upstream change for support for latest pep257 tool
-#
-# Should be -e hg+https://bitbucket.org/ziadsawalha/flake8-docstrings@51864b0e7451bc0a43ab6fb0303e8a69961cb401#egg=flake8-docstring
-# ... but mercurial (hg) doesn't seem to be installed on openstack infrastructure. So, using a github temporary fork
--e git://github.com/ziadsawalha/flake8_docstrings@v0.1.5#egg=flake8-docstring
 
 # Newer hacking
 # Includes two fixes for handling blank lines in files and for handling egg-linked libraries
 -e git://github.com/ziadsawalha/hacking.git@76ff3d0c8b116df147b7e4ca00afda67a9537f2a#egg=hacking
 
-
 coverage>=3.6
 discover
+flake8_docstrings>=0.2.0
 fixtures>=0.3.14
+freezegun
 mock>=1.0
 sphinx>=1.1.2,<1.2
 testrepository>=0.0.17
 testtools>=0.9.32
-WebOb>=1.2.3,<1.3
-
-Babel>=1.3
-freezegun
