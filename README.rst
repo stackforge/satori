@@ -27,9 +27,9 @@ Getting Started
 Run::
 
    $ pip install satori
-   $ satori foo.com
+   $ satori www.foo.com
    Address:
-     foo.com resolves to IPv4 address 4.4.4.4
+     www.foo.com resolves to IPv4 address 4.4.4.4
 
 Deeper discovery is available if the network location (IP or hostname) is
 hosted on an OpenStack cloud tenant that Satori can access. Cloud settings can
@@ -89,10 +89,18 @@ Unit tests can be ran simply by running::
 Links
 =====
 - `OpenStack  Wiki`_
+- `Documentation`_
+- `Code`_
 - `Launchpad Project`_
+- `Features`_
+- `Issues`_
 
 .. _OpenStack Wiki: https://wiki.openstack.org/Satori
-.. _Launchpad Project: https://launchpad.net/satori
+.. _Documentation: http://satori.readthedocs.org/
 .. _OpenStack tenant environment variables: http://docs.openstack.org/developer/python-novaclient/shell.html
 .. _related OpenStack project: https://wiki.openstack.org/wiki/ProjectTypes
-.. _install virtualenv: https://github.com/rackerlabs/satori/blob/master/tools/install_venv.py
+.. _install virtualenv: https://github.com/stackforge/satori/blob/master/tools/install_venv.py
+.. _Code: https://github.com/stackforge/satori
+.. _Launchpad Project: https://launchpad.net/satori
+.. _Features: https://blueprints.launchpad.net/satori
+.. _Issues: https://bugs.launchpad.net/satori/
