@@ -1,0 +1,4 @@
+graft satori/formats
+include setup.py
+include setup.cfg
+global-exclude *.pyc *.sdx *.log *.db *.swp
