@@ -27,9 +27,8 @@ import logging
 import os
 import sys
 
-import six
-
 from satori.common import logging as common_logging
+from satori.common import templating
 from satori import discovery
 
 LOG = logging.getLogger(__name__)
@@ -159,7 +158,7 @@ def main():
 
     try:
         results = discovery.run(args.netloc, args)
-        output_results(args.netloc, results)
+        print(format_output(args.netloc, results))
     except Exception as exc:  # pylint: disable=W0703
         if args.debug:
             LOG.exception(exc)
@@ -167,46 +166,19 @@ def main():
     return 0
 
 
-def output_results(discovered_target, results):
-    """Print results in CLI format."""
-    address = results['address']
-    print(u"Address:\n\t%s resolves to IPv4 address %s" % (
-          discovered_target, address))
+def get_template(name):
+    """Get template text fromtemplates directory by name."""
+    root_dir = os.path.dirname(__file__)
+    template_path = os.path.join(root_dir, "formats", "%s.jinja" % name)
+    with open(template_path, 'r') as handle:
+        template = handle.read()
+    return template
 
-    if 'domain' in results:
-        print(u"Domain: %s" % results['domain']['name'])
-        print(u"\tRegistrar: %s" % results['domain']['registrar'])
-        if results['domain']['nameservers']:
-            print(u"\tNameservers: %s" % (
-                  ", ".join(results['domain']['nameservers'])
-                  ))
-        if results['domain'].get('days_until_expires') is not None:
-            print(u"\tExpires: %d days" %
-                  results['domain']['days_until_expires'])
 
-    if 'host' in results:
-        host = results['host']
-        print(u"Host:\n\t%s (%s) is hosted on a %s" % (
-              address, discovered_target, host['type']))
-
-        print(u"\tInstance Information:")
-        print(u"\t\tURI: %s" % host['uri'])
-        print(u"\t\tName: %s" % host['name'])
-        print(u"\t\tID: %s" % host['id'])
-
-        print(u"\tip-addresses:")
-        addresses = host.get('addresses') or {}
-        for name, address_list in six.iteritems(addresses):
-            print(u"\t\t%s:" % name)
-            for server_address in address_list:
-                print(u"\t\t\t%s:" % server_address['addr'])
-
-        if 'system_info' in host:
-            print(u"\tSystem Information:")
-            print(u"\t\t%s" % host['system_info'])
-
-    else:
-        print(u"Host not found")
+def format_output(discovered_target, results):
+    """Format results in CLI format."""
+    template = get_template("text")
+    return templating.parse(template, target=discovered_target, data=results)
 
 
 if __name__ == "__main__":

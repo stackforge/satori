@@ -1,0 +1,17 @@
+Address:
+    {{ target }} resolves to IPv4 address {{ data.address }}
+{% if data.domain %}Domain: {{ data.domain.name }}
+    Registrar: {{ data.domain.registrar }}{% if data.domain.nameservers %}
+    Nameservers: {% for nameserver in data.domain.nameservers %}{{nameserver}}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% endif %}
+{% if data.domain.days_until_expires %}    Expires: {{ data.domain.days_until_expires }} days{% endif %}
+{% if data.host %}Host:
+    {{ data.address }} ({{ target }}) is hosted on a {{ data.host.type }}
+    Instance Information:
+        URI: {{ data.host.uri }}
+        Name: {{ data.host.name }}
+        ID: {{ data.host.id }}
+    ip-addresses:{% for name, addresses in data.host.addresses.iteritems() %}
+        {{ name }}:{% for address in addresses %}
+            {{ address.addr }}{% endfor %}{% endfor %}
+{% else %}Host not found
+{% endif %}
