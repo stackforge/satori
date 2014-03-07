@@ -85,6 +85,12 @@ Unit tests can be ran simply by running::
 
    $ run_tests.sh
 
+Checking test coverage::
+
+  $ tox -ecover
+  $ coverage html -d covhtml -i
+  $ open covhtml/index.html  # opens the report in a browser
+
 
 Links
 =====
