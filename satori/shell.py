@@ -23,12 +23,16 @@ findings back to the user.
 from __future__ import print_function
 
 import argparse
+import logging
 import os
 import sys
 
 import six
 
+from satori.common import logging as common_logging
 from satori import discovery
+
+LOG = logging.getLogger(__name__)
 
 
 def main():
@@ -104,7 +108,35 @@ def main():
              'information. E.g. ohai, facts, factor.'
     )
 
+    # Output formatting
+    parser.add_argument(
+        "--logconfig",
+        help="Optional logging configuration file"
+    )
+    parser.add_argument(
+        "-d", "--debug",
+        action="store_true",
+        help="turn on additional debugging inspection and "
+        "output including full HTTP requests and responses. "
+        "Log output includes source file path and line "
+        "numbers."
+    )
+
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="turn up logging to DEBUG (default is INFO)"
+    )
+
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="turn down logging to WARN (default is INFO)"
+    )
+
     args = parser.parse_args()
+
+    common_logging.init_logging(args)
 
     if args.host_key_path:
         args.host_key = args.host_key_path.read()
@@ -123,8 +155,13 @@ def main():
                      "tenant. Either provide all of these settings or none of "
                      "them.")
 
-    results = discovery.run(args.netloc, args)
-    output_results(args.netloc, results)
+    try:
+        results = discovery.run(args.netloc, args)
+        output_results(args.netloc, results)
+    except Exception as exc:  # pylint: disable=W0703
+        if args.debug:
+            LOG.exception(exc)
+        return str(exc)
     return 0
 
 
