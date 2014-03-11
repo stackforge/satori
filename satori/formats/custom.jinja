@@ -1,0 +1,23 @@
+{#
+
+This is a jinja template used to customize the output of satori. You can add
+as many of those as you'd like to your setup. You can reference them using the
+--format (or -F) argument. satori takes the format you asked for and appends
+".jinja" to it to look up the file from this dirfectory.
+
+You have some global variables available to you:
+
+- target: that's the address or URL supplied at the command line
+- data: all the discovery data
+
+
+For example, to use this template:
+
+    $ satori openstack.org -F custo
+
+    Hi! localhost
+
+Happy customizing :-)
+
+#}
+Hi! {{ target }}

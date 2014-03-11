@@ -19,6 +19,7 @@ import unittest
 from freezegun import freeze_time
 import mock
 import pythonwhois
+import six
 
 from satori import dns
 from satori import errors
@@ -234,7 +235,7 @@ class TestDNS(utils.TestCase):
         data = dns.domain_info(self.domain)
         self.assertIsInstance(data['whois'][0], str)
 
-    def test_domain_info_returns_datetime_for_expiry_string(self):
+    def test_domain_info_returns_string_date_for_expiry(self):
         small_whois = ["""
         Domain : example.io
         Status : Live
@@ -245,17 +246,11 @@ class TestDNS(utils.TestCase):
         """]
         self.mynet.get_whois_raw.return_value = small_whois
         data = dns.domain_info(self.domain)
-        self.assertIsInstance(
-            data['expiration_date'],
-            datetime.datetime
-        )
+        self.assertIsInstance(data['expiration_date'], six.string_types)
 
-    def test_domain_info_returns_datetime_for_expiration_date_string(self):
+    def test_domain_info_returns_string_for_expiration_date_string(self):
         data = dns.domain_info(self.domain)
-        self.assertIsInstance(
-            data['expiration_date'],
-            datetime.datetime
-        )
+        self.assertIsInstance(data['expiration_date'], six.string_types)
 
     def test_domain_info_returns_none_for_missing_expiration_date(self):
         small_whois = ["""
@@ -267,10 +262,7 @@ class TestDNS(utils.TestCase):
         """]
         self.mynet.get_whois_raw.return_value = small_whois
         data = dns.domain_info(self.domain)
-        self.assertEqual(
-            data['expiration_date'],
-            None
-        )
+        self.assertIsNone(data['expiration_date'])
 
 if __name__ == "__main__":
     unittest.main()

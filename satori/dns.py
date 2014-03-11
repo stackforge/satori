@@ -16,12 +16,13 @@ import datetime
 import logging
 import socket
 
-import dateutil.parser
 import pythonwhois
 from six.moves.urllib import parse as urlparse
 import tldextract
 
 from satori import errors
+from satori import utils
+
 
 LOG = logging.getLogger(__name__)
 
@@ -64,9 +65,12 @@ def domain_info(domain):
         if (isinstance(result['expiration_date'], list)
                 and len(result['expiration_date']) > 0):
             expires = result['expiration_date'][0]
-            if not isinstance(expires, datetime.datetime):
-                expires = dateutil.parser.parse(expires)
-            days_until_expires = (expires - datetime.datetime.now()).days
+            if isinstance(expires, datetime.datetime):
+                days_until_expires = (expires - datetime.datetime.now()).days
+                expires = utils.get_time_string(time_obj=expires)
+            else:
+                days_until_expires = (utils.parse_time_string(expires) -
+                                      datetime.datetime.now()).days
     return {
         'name': domain,
         'whois': result['raw'],

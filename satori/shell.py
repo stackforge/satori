@@ -23,6 +23,7 @@ findings back to the user.
 from __future__ import print_function
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -109,9 +110,17 @@ def main():
 
     # Output formatting
     parser.add_argument(
+        '--format', '-F',
+        dest='format',
+        default='text',
+        help='Format for output (json or text)'
+    )
+
+    parser.add_argument(
         "--logconfig",
         help="Optional logging configuration file"
     )
+
     parser.add_argument(
         "-d", "--debug",
         action="store_true",
@@ -156,14 +165,30 @@ def main():
                      "tenant. Either provide all of these settings or none of "
                      "them.")
 
+    if not (args.format == 'json' or check_format(args.format or "text")):
+        sys.exit("Output format file (%s) not found or accessible. Try "
+                 "specifying raw JSON format using `--format json`" %
+                 get_template_path(args.format))
     try:
         results = discovery.run(args.netloc, args)
-        print(format_output(args.netloc, results))
+        print(format_output(args.netloc, results, template_name=args.format))
     except Exception as exc:  # pylint: disable=W0703
         if args.debug:
             LOG.exception(exc)
         return str(exc)
     return 0
+
+
+def get_template_path(name):
+    """Get template path from name."""
+    root_dir = os.path.dirname(__file__)
+    return os.path.join(root_dir, "formats", "%s.jinja" % name)
+
+
+def check_format(name):
+    """Verify that we have the requested format template."""
+    template_path = get_template_path(name)
+    return os.path.exists(template_path)
 
 
 def get_template(name):
@@ -175,10 +200,14 @@ def get_template(name):
     return template
 
 
-def format_output(discovered_target, results):
+def format_output(discovered_target, results, template_name="text"):
     """Format results in CLI format."""
-    template = get_template("text")
-    return templating.parse(template, target=discovered_target, data=results)
+    if template_name == 'json':
+        return(json.dumps(results, indent=2))
+    else:
+        template = get_template(template_name)
+        return templating.parse(template, target=discovered_target,
+                                data=results)
 
 
 if __name__ == "__main__":
