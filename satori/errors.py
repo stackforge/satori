@@ -39,3 +39,8 @@ class SatoriInvalidNetloc(SatoriException):
 class SatoriShellException(SatoriException):
 
     """Invalid shell parameters."""
+
+
+class GetPTYRetryFailure(SatoriException):
+
+    """Tried to re-run command with get_pty to no avail."""
