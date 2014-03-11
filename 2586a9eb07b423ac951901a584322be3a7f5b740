@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Caleb Groom <caleb@calebgroom.com>
+Code-Review+2: Caleb Groom <caleb@calebgroom.com>
+Code-Review+1: Samuel Stavinoha <samuel.stavinoha@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 11 Mar 2014 01:30:34 +0000
+Reviewed-on: https://review.openstack.org/79479
+Project: stackforge/satori
+Branch: refs/heads/master
