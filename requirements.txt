@@ -1,5 +1,6 @@
 iso8601>=0.1.9
 Jinja2
+paramiko>=1.12.2
 pbr>=0.5.21,<1.0
 python-novaclient==2.15.0
 # pythonwhois with python 3.3 readiness patch
