@@ -34,3 +34,8 @@ class SatoriException(Exception):
 class SatoriInvalidNetloc(SatoriException):
 
     """Netloc that cannot be parsed by `urlparse`."""
+
+
+class GetPTYRetryFailure(SatoriException):
+
+    """Tried to re-run command with get_pty to no avail."""
