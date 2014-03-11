@@ -96,19 +96,14 @@ def main():
         help='OpenStack Auth tenant ID. Defaults to env[OS_TENANT_ID].'
     )
 
-    parser.add_argument(
-        '--host-key-path',
-        type=argparse.FileType('r'),
-        help='SSH key to access Nova resources.'
-    )
-
+    # Plugins
     parser.add_argument(
         '--system-info',
         help='Mechanism to use on a Nova resource to obtain system '
              'information. E.g. ohai, facts, factor.'
     )
 
-    # Output formatting
+    # Output formatting and logging
     parser.add_argument(
         '--format', '-F',
         dest='format',
@@ -142,12 +137,32 @@ def main():
         help="turn down logging to WARN (default is INFO)"
     )
 
+    # SSH options
+    ssh_group = parser.add_argument_group(
+        'ssh-like Settings',
+        'To be used to access hosts.'
+    )
+    ssh_group.add_argument(
+        "-i", "--host-key-path",
+        type=argparse.FileType('r'),
+        help="Selects a file from which the identity (private key) for public "
+        "key authentication is read. The default ~/.ssh/id_dsa, "
+        "~/.ssh/id_ecdsa and ~/.ssh/id_rsa"
+    )
+    ssh_group.add_argument(
+        "-o",
+        metavar="ssh_options",
+        help="Mirrors the ssh -o option. See ssh_config(5)"
+    )
+
     args = parser.parse_args()
 
     common_logging.init_logging(args)
 
     if args.host_key_path:
         args.host_key = args.host_key_path.read()
+        if not args.system_info:
+            args.system_info = 'ohai-solo'
     else:
         args.host_key = None
 

@@ -50,11 +50,11 @@ def run(address, config):
             host['addresses'] = server.addresses
 
             if all([config.system_info, config.host_key]):
-                module_name = config.system_info
+                module_name = config.system_info.replace("-", "_")
                 if '.' not in module_name:
                     module_name = 'satori.sysinfo.%s' % module_name
                 system_info_module = utils.import_object(module_name)
-                result = system_info_module.get_systeminfo(host, config)
+                result = system_info_module.get_systeminfo(ipaddress, config)
                 host['system_info'] = result
 
             results['host'] = host
