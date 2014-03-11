@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+1: Caleb Groom <caleb@calebgroom.com>
+Approved+1: Ryan Walker <ryan.walker@rackspace.com>
+Code-Review+2: Ryan Walker <ryan.walker@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 11 Mar 2014 21:16:38 +0000
+Reviewed-on: https://review.openstack.org/79737
+Project: stackforge/satori
+Branch: refs/heads/master
