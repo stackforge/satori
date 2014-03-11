@@ -15,5 +15,5 @@ Bug tracking for the satori project is on  `Launchpad`_. Submit
 code to the openstack satori project using `Github`_. Feature
 additions and design discussions happen using blueprints on `Launchpad`_
 
-.. _GitHub: https://github.com/rackerlabs/satori
+.. _GitHub: https://github.com/stackforge/satori
 .. _Launchpad: https://launchpad.net/satori
