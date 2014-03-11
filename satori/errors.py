@@ -21,15 +21,6 @@ class SatoriException(Exception):
 
     """
 
-    def __init__(self, message):
-        """Store error message."""
-        self.message = message
-        super(SatoriException, self).__init__()
-
-    def __str__(self):
-        """Display error message."""
-        return repr(self.message)
-
 
 class SatoriInvalidNetloc(SatoriException):
 
@@ -39,3 +30,8 @@ class SatoriInvalidNetloc(SatoriException):
 class SatoriShellException(SatoriException):
 
     """Invalid shell parameters."""
+
+
+class GetPTYRetryFailure(SatoriException):
+
+    """Tried to re-run command with get_pty to no avail."""
