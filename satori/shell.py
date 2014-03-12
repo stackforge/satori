@@ -31,12 +31,13 @@ import sys
 from satori.common import logging as common_logging
 from satori.common import templating
 from satori import discovery
+from satori import errors
 
 LOG = logging.getLogger(__name__)
 
 
-def main():
-    """Discover an existing configuration for a network location."""
+def parse_args(argv):
+    """Parse the command line arguments."""
     parser = argparse.ArgumentParser(description='Configuration discovery.')
     parser.add_argument(
         'netloc',
@@ -142,41 +143,50 @@ def main():
         help="turn down logging to WARN (default is INFO)"
     )
 
-    args = parser.parse_args()
+    config = parser.parse_args(argv)
 
-    common_logging.init_logging(args)
-
-    if args.host_key_path:
-        args.host_key = args.host_key_path.read()
+    if config.host_key_path:
+        config.host_key = config.host_key_path.read()
     else:
-        args.host_key = None
+        config.host_key = None
 
     # argparse lacks a method to say "if this option is set, require these too"
     required_to_access_cloud = [
-        args.username,
-        args.password,
-        args.authurl,
-        args.region,
-        args.tenant_name or args.tenant_id,
+        config.username,
+        config.password,
+        config.authurl,
+        config.region,
+        config.tenant_name or config.tenant_id,
     ]
-    if args.username and not all(required_to_access_cloud):
-        parser.error("To connect to an OpenStack cloud you must supply a "
-                     "username, password, authentication enpoind, region and "
-                     "tenant. Either provide all of these settings or none of "
-                     "them.")
+    if any(required_to_access_cloud) and not all(required_to_access_cloud):
+        raise errors.SatoriShellException(
+            "To connect to an OpenStack cloud you must supply a username, "
+            "password, authentication endpoint, region and tenant. Either "
+            "provide all of these settings or none of them."
+        )
 
-    if not (args.format == 'json' or check_format(args.format or "text")):
+    return config
+
+
+def main(argv=None):
+    """Discover an existing configuration for a network location."""
+    config = parse_args(argv)
+    common_logging.init_logging(config)
+
+    if not (config.format == 'json' or check_format(config.format or "text")):
         sys.exit("Output format file (%s) not found or accessible. Try "
                  "specifying raw JSON format using `--format json`" %
-                 get_template_path(args.format))
+                 get_template_path(config.format))
     try:
-        results = discovery.run(args.netloc, args)
-        print(format_output(args.netloc, results, template_name=args.format))
+        results = discovery.run(config.netloc, config)
+        print(format_output(config.netloc, results,
+                            template_name=config.format))
     except Exception as exc:  # pylint: disable=W0703
-        if args.debug:
+        if config.debug:
             LOG.exception(exc)
         return str(exc)
-    return 0
+
+    sys.exit(0)
 
 
 def get_template_path(name):
@@ -192,7 +202,7 @@ def check_format(name):
 
 
 def get_template(name):
-    """Get template text fromtemplates directory by name."""
+    """Get template text from templates directory by name."""
     root_dir = os.path.dirname(__file__)
     template_path = os.path.join(root_dir, "formats", "%s.jinja" % name)
     with open(template_path, 'r') as handle:
