@@ -9,13 +9,25 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-# pylint: disable=R0902, R0913
+
 """SSH Module for connecting to and automating remote commands.
 
 Supports proxying, as in `ssh -A`
+
+To control the behavior of the SSH client, use the specific connect_with_*
+calls. The .connect() call behaves like the ssh command and attempts a number
+of connection methods, including using the curent user's ssh keys.
+
+If interactive is set to true, the module will also prompt for a password if no
+other connection methods succeeded.
+
+Note that test_connection() calls connect(). To test a connection and control
+the authentication methods used, just call connect_with_* and catch any
+exceptions instead of using test_connect().
 """
+
 import ast
+import getpass
 import logging
 import os
 import re
@@ -36,6 +48,27 @@ TTY_REQUIRED = [
     "is not a tty",
     "no tty present",
 ]
+
+
+def make_pkey(private_key):
+    """Return a paramiko.pkey.PKey from private key string."""
+    key_classes = [paramiko.rsakey.RSAKey,
+                   paramiko.dsskey.DSSKey,
+                   paramiko.ecdsakey.ECDSAKey, ]
+
+    keyfile = six.StringIO(private_key)
+    for cls in key_classes:
+        keyfile.seek(0)
+        try:
+            pkey = cls.from_private_key(keyfile)
+        except paramiko.SSHException:
+            continue
+        else:
+            keytype = cls
+            LOG.info("Valid SSH Key provided (%s)", keytype.__name__)
+            return pkey
+
+    raise paramiko.SSHException("Is not a valid private key")
 
 
 def connect(*args, **kwargs):
@@ -61,13 +94,14 @@ class AcceptMissingHostKey(paramiko.client.MissingHostKeyPolicy):
         client._host_keys.add(hostname, key.get_name(), key)
 
 
-class SSH(paramiko.SSHClient):
+class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
     """Connects to devices via SSH to execute commands."""
 
+    # pylint: disable=R0913
     def __init__(self, host, password=None, username="root",
                  private_key=None, key_filename=None, port=22,
-                 timeout=20, proxy=None, options=None):
+                 timeout=20, proxy=None, options=None, interactive=False):
         """Create an instance of the SSH class.
 
         :param str host:        The ip address or host name of the server
@@ -91,6 +125,7 @@ class SSH(paramiko.SSHClient):
                                 Conversion of booleans is also supported,
                                 (.., options={'StrictHostKeyChecking': False})
                                 is equivalent.
+        :keyword interactive:   If true, prompt for password if missing.
         """
         self.password = password
         self.host = host
@@ -103,6 +138,7 @@ class SSH(paramiko.SSHClient):
         self.options = options or {}
         self.proxy = proxy
         self.sock = None
+        self.interactive = interactive
 
         if self.proxy:
             if not isinstance(self.proxy, SSH):
@@ -111,27 +147,6 @@ class SSH(paramiko.SSHClient):
                                 "satori.ssh.connect() )")
 
         super(SSH, self).__init__()
-
-    @staticmethod
-    def _get_pkey(private_key):
-        """Return a paramiko.pkey.PKey from private key string."""
-        key_classes = [paramiko.rsakey.RSAKey,
-                       paramiko.dsskey.DSSKey,
-                       paramiko.ecdsakey.ECDSAKey, ]
-
-        keyfile = six.StringIO(private_key)
-        for cls in key_classes:
-            keyfile.seek(0)
-            try:
-                pkey = cls.from_private_key(keyfile)
-            except paramiko.SSHException:
-                continue
-            else:
-                keytype = cls
-                LOG.info("Valid SSH Key provided (%s)", keytype.__name__)
-                return pkey
-
-        raise paramiko.SSHException("Is not a valid private key")
 
     @classmethod
     def get_client(cls, *args, **kwargs):
@@ -156,17 +171,52 @@ class SSH(paramiko.SSHClient):
         LOG.debug("Remote platform info: %s", self._platform_info)
         return self._platform_info
 
-    def connect(self, use_password=False):  # pylint: disable=W0221
-        """Attempt an SSH connection through paramiko.SSHClient.connect .
+    def connect_with_host_keys(self):
+        """Try connecting with locally available keys (ex. ~/.ssh/id_rsa)."""
+        LOG.debug("Trying to connect with local host keys")
+        return self._connect(look_for_keys=True, allow_agent=False)
 
-        The order for authentication attempts is:
-        - private_key
-        - key_filename
-        - any key discoverable in ~/.ssh/
-        - username/password
+    def connect_with_password(self):
+        """Try connecting with password."""
+        LOG.debug("Trying to connect with password")
+        if self.interactive and not self.password:
+            LOG.debug("Prompting for password (interactive=%s)",
+                      self.interactive)
+            try:
+                self.password = getpass.getpass("Enter password for %s:" %
+                                                self.username)
+            except KeyboardInterrupt:
+                LOG.debug("User cancelled at password prompt")
+        if not self.password:
+            raise paramiko.PasswordRequiredException("Password not provided")
+        return self._connect(
+            password=self.password,
+            look_for_keys=False,
+            allow_agent=False)
 
-        :param use_password: Skip SSH keys when authenticating.
-        """
+    def connect_with_key_file(self):
+        """Try connecting with key file."""
+        LOG.debug("Trying to connect with key file")
+        if not self.key_filename:
+            raise paramiko.AuthenticationException("No key file supplied")
+        return self._connect(
+            key_filename=os.path.expanduser(self.key_filename),
+            look_for_keys=False,
+            allow_agent=False)
+
+    def connect_with_key(self):
+        """Try connecting with key string."""
+        LOG.debug("Trying to connect with private key string")
+        if not self.private_key:
+            raise paramiko.AuthenticationException("No key supplied")
+        pkey = make_pkey(self.private_key)
+        return self._connect(
+            pkey=pkey,
+            look_for_keys=False,
+            allow_agent=False)
+
+    def _connect(self, **kwargs):
+        """Set up client and connect to target."""
         self.load_system_host_keys()
 
         if self.proxy:
@@ -176,47 +226,51 @@ class SSH(paramiko.SSHClient):
         if self.options.get('StrictHostKeyChecking') in (False, "no"):
             self.set_missing_host_key_policy(AcceptMissingHostKey())
 
-        try:
-            if self.private_key is not None and not use_password:
-                pkey = self._get_pkey(self.private_key)
-                LOG.debug("Trying supplied private key string")
-                return super(SSH, self).connect(
-                    self.host,
-                    timeout=self.timeout,
-                    port=self.port,
-                    username=self.username,
-                    pkey=pkey,
-                    sock=self.sock)
-            elif self.key_filename is not None and not use_password:
-                LOG.debug("Trying key file: %s",
-                          os.path.expanduser(self.key_filename))
-                return super(SSH, self).connect(
-                    self.host, timeout=self.timeout, port=self.port,
-                    username=self.username,
-                    key_filename=os.path.expanduser(self.key_filename),
-                    sock=self.sock)
-            else:
-                return super(SSH, self).connect(
-                    self.host, port=self.port,
-                    username=self.username,
-                    password=self.password,
-                    sock=self.sock)
+        return super(SSH, self).connect(
+            self.host,
+            timeout=kwargs.pop('timeout', self.timeout),
+            port=kwargs.pop('port', self.port),
+            username=kwargs.pop('username', self.username),
+            pkey=kwargs.pop('pkey', None),
+            sock=kwargs.pop('sock', self.sock),
+            **kwargs)
 
-        except paramiko.PasswordRequiredException as exc:
-            #Looks like we have cert issues, so try password auth if we can
-            if self.password and not use_password:  # dont recurse twice
-                LOG.debug("Retrying with password credentials")
-                return self.connect(use_password=True)
-            else:
-                raise exc
+    def connect(self):  # pylint: disable=W0221
+        """Attempt an SSH connection through paramiko.SSHClient.connect.
+
+        The order for authentication attempts is:
+        - private_key
+        - key_filename
+        - any key discoverable in ~/.ssh/
+        - username/password (will prompt if the password is not supplied and
+                             interactive is true)
+        """
+        if self.private_key:
+            try:
+                return self.connect_with_key()
+            except paramiko.SSHException:
+                pass  # try next method
+
+        if self.key_filename:
+            try:
+                return self.connect_with_key_file()
+            except paramiko.SSHException:
+                pass  # try next method
+
+        try:
+            return self.connect_with_host_keys()
+        except paramiko.SSHException:
+            pass  # try next method
+
+        try:
+            return self.connect_with_password()
         except paramiko.BadHostKeyException as exc:
             msg = (
                 "ssh://%s@%s:%d failed:  %s. You might have a bad key "
                 "entry on your server, but this is a security issue and "
                 "won't be handled automatically. To fix this you can remove "
-                "the host entry for this host from the /.ssh/known_hosts file"
-                % (self.username, self.host, self.port, exc))
-            LOG.info(msg)
+                "the host entry for this host from the /.ssh/known_hosts file")
+            LOG.info(msg, self.username, self.host, self.port, exc)
             raise exc
         except Exception as exc:
             LOG.info('ssh://%s@%s:%d failed.  %s',
@@ -239,7 +293,6 @@ class SSH(paramiko.SSHClient):
             LOG.debug("ssh://%s@%s:%d is up.",
                       self.username, self.host, self.port)
             return True
-
         except Exception as exc:
             LOG.info("ssh://%s@%s:%d failed.  %s",
                      self.username, self.host, self.port, exc)
@@ -324,6 +377,12 @@ class SSH(paramiko.SSHClient):
                 'stderr': stderr.read()
             }
 
+            LOG.debug("STDOUT from ssh://%s@%s:%d: %s",
+                      self.username, self.host, self.port,
+                      results['stdout'])
+            LOG.debug("STDERR from ssh://%s@%s:%d: %s",
+                      self.username, self.host, self.port,
+                      results['stderr'])
             exit_code = chan.recv_exit_status()
 
             if with_exit_code:

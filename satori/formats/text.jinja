@@ -1,17 +1,20 @@
-Address:
+{% if data['address'] != target %}Address:
     {{ target }} resolves to IPv4 address {{ data.address }}
-{% if data.domain %}Domain: {{ data.domain.name }}
+{% endif %}{% if data['domain'] %}Domain: {{ data.domain.name }}
     Registrar: {{ data.domain.registrar }}{% if data.domain.nameservers %}
-    Nameservers: {% for nameserver in data.domain.nameservers %}{{nameserver}}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% endif %}
-{% if data.domain.days_until_expires %}    Expires: {{ data.domain.days_until_expires }} days{% endif %}
-{% if data.host %}Host:
+    Nameservers: {% for nameserver in data.domain.nameservers %}{{nameserver}}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% endif %}{% if data['domain'] and data.domain.days_until_expires %}    Expires: {{ data.domain.days_until_expires }} days{% endif %}{% if data['host'] and data.host.type == 'Nova instance' %}Host:
     {{ data.address }} ({{ target }}) is hosted on a {{ data.host.type }}
     Instance Information:
         URI: {{ data.host.uri }}
         Name: {{ data.host.name }}
         ID: {{ data.host.id }}
-    ip-addresses:{% for name, addresses in data.host.addresses.iteritems() %}
+    ip-addresses:{% for name, addresses in data.host.addresses.items() %}
         {{ name }}:{% for address in addresses %}
             {{ address.addr }}{% endfor %}{% endfor %}
+{% elif data['address'] %}Host:
+    ip-address: {{ data.address }}
 {% else %}Host not found
+{% endif %}{% if data['host'] and data.host.system_info %}Packages:
+{% for name, package in data.host.system_info.packages.items() %}      {{ name }}:  {{ package.version }}
+{% endfor %}
 {% endif %}
