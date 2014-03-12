@@ -1,5 +1,5 @@
 =============
-Terminalogy
+Terminology
 =============
 
 Opinions
