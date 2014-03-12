@@ -44,12 +44,15 @@ def parse_args(argv):
         help='Network location. E.g. https://domain.com, sub.domain.com, or '
              '4.3.2.1'
     )
+
+    #
+    # Openstack Client Settings
+    #
     openstack_group = parser.add_argument_group(
         'OpenStack Settings',
         'Cloud credentials, settings and endpoints. If a network location is '
         'found to be hosted on the tenant additional information is provided.'
     )
-
     openstack_group.add_argument(
         '--os-username',
         dest='username',
@@ -81,7 +84,6 @@ def parse_args(argv):
         help='OpenStack Compute API version. Defaults to '
              'env[OS_COMPUTE_API_VERSION] or 1.1.'
     )
-
     # Tenant name or ID can be supplied
     tenant_group = openstack_group.add_mutually_exclusive_group()
     tenant_group.add_argument(
@@ -97,31 +99,28 @@ def parse_args(argv):
         help='OpenStack Auth tenant ID. Defaults to env[OS_TENANT_ID].'
     )
 
-    parser.add_argument(
-        '--host-key-path',
-        type=argparse.FileType('r'),
-        help='SSH key to access Nova resources.'
-    )
-
+    #
+    # Plugins
+    #
     parser.add_argument(
         '--system-info',
         help='Mechanism to use on a Nova resource to obtain system '
              'information. E.g. ohai, facts, factor.'
     )
 
-    # Output formatting
+    #
+    # Output formatting and logging
+    #
     parser.add_argument(
         '--format', '-F',
         dest='format',
         default='text',
         help='Format for output (json or text)'
     )
-
     parser.add_argument(
         "--logconfig",
         help="Optional logging configuration file"
     )
-
     parser.add_argument(
         "-d", "--debug",
         action="store_true",
@@ -130,21 +129,41 @@ def parse_args(argv):
         "Log output includes source file path and line "
         "numbers."
     )
-
     parser.add_argument(
         "-v", "--verbose",
         action="store_true",
         help="turn up logging to DEBUG (default is INFO)"
     )
-
     parser.add_argument(
         "-q", "--quiet",
         action="store_true",
         help="turn down logging to WARN (default is INFO)"
     )
 
-    config = parser.parse_args(argv)
+    #
+    # SSH options
+    #
+    ssh_group = parser.add_argument_group(
+        'ssh-like Settings',
+        'To be used to access hosts.'
+    )
+    # ssh.py actualy handles the defaults. We're documenting it here s that the
+    # command-line heklp string is informative, but the default is set in
+    # ssh.py (by calling paramiko's load_system_host_keys).
+    ssh_group.add_argument(
+        "-i", "--host-key-path",
+        type=argparse.FileType('r'),
+        help="Selects a file from which the identity (private key) for public "
+        "key authentication is read. The default ~/.ssh/id_dsa, "
+        "~/.ssh/id_ecdsa and ~/.ssh/id_rsa"
+    )
+    ssh_group.add_argument(
+        "-o",
+        metavar="ssh_options",
+        help="Mirrors the ssh -o option. See ssh_config(5)"
+    )
 
+    config = parser.parse_args(argv)
     if config.host_key_path:
         config.host_key = config.host_key_path.read()
     else:
@@ -177,8 +196,9 @@ def main(argv=None):
         sys.exit("Output format file (%s) not found or accessible. Try "
                  "specifying raw JSON format using `--format json`" %
                  get_template_path(config.format))
+
     try:
-        results = discovery.run(config.netloc, config)
+        results = discovery.run(config.netloc, config, interactive=True)
         print(format_output(config.netloc, results,
                             template_name=config.format))
     except Exception as exc:  # pylint: disable=W0703
@@ -217,7 +237,7 @@ def format_output(discovered_target, results, template_name="text"):
     else:
         template = get_template(template_name)
         return templating.parse(template, target=discovered_target,
-                                data=results)
+                                data=results).strip('\n')
 
 
 if __name__ == "__main__":

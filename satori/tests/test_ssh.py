@@ -148,151 +148,235 @@ class TestSSHKeys(utils.TestCase):
 
     def test_invalid_key_raises_sshexception(self):
         self.assertRaises(
-            paramiko.SSHException, ssh.SSH._get_pkey, self.invalidkey)
+            paramiko.SSHException, ssh.make_pkey, self.invalidkey)
 
     def test_valid_ecdsa_returns_pkey_obj(self):
-        self.assertIsInstance(ssh.SSH._get_pkey(self.ecdsakey), paramiko.PKey)
+        self.assertIsInstance(ssh.make_pkey(self.ecdsakey), paramiko.PKey)
 
     def test_valid_rsa_returns_pkey_obj(self):
-        self.assertIsInstance(ssh.SSH._get_pkey(self.rsakey), paramiko.PKey)
+        self.assertIsInstance(ssh.make_pkey(self.rsakey), paramiko.PKey)
 
     def test_valid_ds_returns_pkey_obj(self):
-        self.assertIsInstance(ssh.SSH._get_pkey(self.dsakey), paramiko.PKey)
+        self.assertIsInstance(ssh.make_pkey(self.dsakey), paramiko.PKey)
 
     @mock.patch.object(ssh, 'LOG')
     def test_valid_ecdsa_logs_key_class(self, mock_LOG):
-        ssh.SSH._get_pkey(self.ecdsakey)
+        ssh.make_pkey(self.ecdsakey)
         mock_LOG.info.assert_called_with(
             'Valid SSH Key provided (%s)', 'ECDSAKey')
 
     @mock.patch.object(ssh, 'LOG')
     def test_valid_rsa_logs_key_class(self, mock_LOG):
-        ssh.SSH._get_pkey(self.rsakey)
+        ssh.make_pkey(self.rsakey)
         mock_LOG.info.assert_called_with(
             'Valid SSH Key provided (%s)', 'RSAKey')
 
     @mock.patch.object(ssh, 'LOG')
     def test_valid_dsa_logs_key_class(self, mock_LOG):
-        ssh.SSH._get_pkey(self.dsakey)
+        ssh.make_pkey(self.dsakey)
         mock_LOG.info.assert_called_with(
             'Valid SSH Key provided (%s)', 'DSSKey')
 
 
-class TestSSHConnect(TestSSHKeys):
+class TestSSHLocalKeys(TestSSHKeys):
 
     def setUp(self):
-        super(TestSSHConnect, self).setUp()
+        super(TestSSHLocalKeys, self).setUp()
         self.host = '123.456.789.0'
         self.client = ssh.SSH(self.host, username='test-user')
-        paramiko.SSHClient.connect = mock.MagicMock()
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
 
-    def test_connect_no_auth_attrs(self):
-        """Test connect call without auth attributes."""
-        self.client.connect()
-        paramiko.SSHClient.connect.assert_called_once_with(
-            '123.456.789.0', username='test-user',
-            password=None, sock=None, port=22)
+    def tearDown(self):
+        self.patcher.stop()
+        super(TestSSHLocalKeys, self).tearDown()
 
-    def test_connect_with_password(self):
-        self.client.password = 'test-password'
-        self.client.connect()
-        paramiko.SSHClient.connect.assert_called_once_with(
-            '123.456.789.0', username='test-user',
-            password='test-password', sock=None, port=22)
+    @mock.patch.object(ssh, 'LOG')
+    def test_connect_host_keys(self, mock_LOG):
+        self.client.connect_with_host_keys()
+        self.mock_connect.assert_called_once_with(
+            '123.456.789.0', username='test-user', pkey=None, timeout=20,
+            sock=None, port=22, look_for_keys=True, allow_agent=False)
+        mock_LOG.debug.assert_called_with(
+            "Trying to connect with local host keys")
+
+
+class TestSSHPassword(TestSSHKeys):
+
+    def setUp(self):
+        super(TestSSHPassword, self).setUp()
+        self.host = '123.456.789.0'
+        self.client = ssh.SSH(self.host, username='test-user')
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super(TestSSHPassword, self).tearDown()
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_connect_with_password(self, mock_LOG):
+        self.client.password = "pxwd"
+        self.client.connect_with_password()
+        self.mock_connect.assert_called_once_with(
+            '123.456.789.0', username='test-user', pkey=None, timeout=20,
+            sock=None, port=22, allow_agent=False, look_for_keys=False,
+            password="pxwd")
+        mock_LOG.debug.assert_called_with("Trying to connect with password")
+
+    def test_connect_with_no_password(self):
+        self.client.password = None
+        self.assertRaises(paramiko.PasswordRequiredException,
+                          self.client.connect_with_password)
+
+    @mock.patch.object(ssh, 'getpass')
+    def test_connect_with_no_password_interactive(self, mock_getpass):
+        self.client.password = None
+        self.client.interactive = True
+        mock_getpass.getpass.return_value = "in-pxwd"
+        self.client.connect_with_password()
+        self.mock_connect.assert_called_once_with(
+            '123.456.789.0', username='test-user', pkey=None, timeout=20,
+            sock=None, port=22, allow_agent=False, look_for_keys=False,
+            password="in-pxwd")
+
+    @mock.patch.object(ssh, 'LOG')
+    @mock.patch.object(ssh, 'getpass')
+    def test_connect_with_interactive_cancel(self, mock_getpass, mock_LOG):
+        self.client.password = None
+        self.client.interactive = True
+        mock_getpass.getpass.side_effect = KeyboardInterrupt()
+        self.assertRaises(paramiko.PasswordRequiredException,
+                          self.client.connect_with_password)
+        mock_LOG.debug.assert_any_call("User cancelled at password prompt")
+        mock_LOG.debug.assert_any_call("Prompting for password "
+                                       "(interactive=%s)", True)
+
+
+class TestSSHKeyFile(TestSSHKeys):
+
+    def setUp(self):
+        super(TestSSHKeyFile, self).setUp()
+        self.host = '123.456.789.0'
+        self.client = ssh.SSH(self.host, username='test-user')
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super(TestSSHKeyFile, self).tearDown()
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_key_filename(self, mock_LOG):
+        self.client.key_filename = "~/not/a/real/path"
+        expanded_path = os.path.expanduser(self.client.key_filename)
+        self.client.connect_with_key_file()
+        self.mock_connect.assert_called_once_with(
+            '123.456.789.0', username='test-user', pkey=None, timeout=20,
+            look_for_keys=False, allow_agent=False, sock=None, port=22,
+            key_filename=expanded_path)
+        mock_LOG.debug.assert_any_call("Trying to connect with key file")
+
+    def test_bad_key_filename(self):
+        self.client.key_filename = None
+        self.assertRaises(paramiko.AuthenticationException,
+                          self.client.connect_with_key_file)
+
+
+class TestSSHKeyString(TestSSHKeys):
+
+    def setUp(self):
+        super(TestSSHKeyString, self).setUp()
+        self.host = '123.456.789.0'
+        self.client = ssh.SSH(self.host, username='test-user')
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super(TestSSHKeyString, self).tearDown()
 
     def test_connect_invalid_private_key_string(self):
         self.client.private_key = self.invalidkey
-        self.assertRaises(paramiko.SSHException, self.client.connect)
+        self.assertRaises(paramiko.SSHException, self.client.connect_with_key)
 
     def test_connect_valid_private_key_string(self):
         validkeys = [self.rsakey, self.dsakey, self.ecdsakey]
         for key in validkeys:
             self.client.private_key = key
-            self.client.connect()
+            self.client.connect_with_key()
             pkey_kwarg_value = (paramiko.SSHClient.
                                 connect.call_args[1]['pkey'])
             self.assertIsInstance(pkey_kwarg_value, paramiko.PKey)
-            paramiko.SSHClient.connect.assert_called_with(
-                '123.456.789.0', username='test-user',
-                pkey=pkey_kwarg_value, sock=None, port=22, timeout=20)
+            self.mock_connect.assert_called_with(
+                '123.456.789.0', username='test-user', allow_agent=False,
+                look_for_keys=False, sock=None, port=22, timeout=20,
+                pkey=pkey_kwarg_value)
 
-    def test_key_filename(self):
-        self.client.key_filename = "~/not/a/real/path"
-        expanded_path = os.path.expanduser(self.client.key_filename)
-        self.client.connect()
-        paramiko.SSHClient.connect.assert_called_once_with(
-            '123.456.789.0', username='test-user',
-            key_filename=expanded_path,
-            sock=None, port=22, timeout=20)
+    def test_connect_no_private_key_string(self):
+        self.client.private_key = None
+        self.assertRaises(paramiko.AuthenticationException,
+                          self.client.connect_with_key)
 
-    def test_use_password_on_exc_negative(self):
+
+class TestSSHPrivateConnect(TestSSHKeys):
+
+    """Test _connect call."""
+
+    def setUp(self):
+        super(TestSSHPrivateConnect, self).setUp()
+        self.host = '123.456.789.0'
+        self.client = ssh.SSH(self.host, username='test-user')
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super(TestSSHPrivateConnect, self).tearDown()
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_connect_no_auth_attrs(self, mock_LOG):
+        """Test connect call without auth attributes."""
+        self.client._connect()
+        self.mock_connect.assert_called_once_with(
+            '123.456.789.0', username='test-user', pkey=None, sock=None,
+            port=22, timeout=20)
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_connect_with_password(self, mock_LOG):
+        self.client._connect(password='test-password')
+        self.mock_connect.assert_called_once_with(
+            '123.456.789.0', username='test-user', timeout=20, pkey=None,
+            password='test-password', sock=None, port=22)
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_use_password_on_exc_negative(self, mock_LOG):
         """Do this without self.password. """
-        paramiko.SSHClient.connect.side_effect = (
+        self.mock_connect.side_effect = (
             paramiko.PasswordRequiredException)
         self.assertRaises(paramiko.PasswordRequiredException,
-                          self.client.connect)
+                          self.client._connect)
 
     @mock.patch.object(ssh, 'LOG')
-    def test_logging_use_password_on_exc_positive(self, mock_LOG):
-        self.client.password = 'test-password'
-        paramiko.SSHClient.connect.side_effect = (
-            paramiko.PasswordRequiredException)
-        self.assertRaises(paramiko.PasswordRequiredException,
-                          self.client.connect)
-        mock_LOG.debug.assert_called_with('Retrying with password credentials')
-
-    @mock.patch.object(ssh, 'LOG')
-    def test_logging_when_badhostkey(self, mock_LOG):
-        """Test when raising BadHostKeyException."""
-        self.client.private_key = self.rsakey
-        paramiko.SSHClient.connect.side_effect = (
-            paramiko.BadHostKeyException(None, None, None))
-        self.assertRaises(paramiko.BadHostKeyException,
-                          self.client.connect)
-        mock_LOG.info.assert_called_with(
-            "ssh://test-user@123.456.789.0:22 failed:  "
-            "Host key for server None does not match!. "
-            "You might have a bad key entry on your server, "
-            "but this is a security issue and won't be handled "
-            "automatically. To fix this you can remove the "
-            "host entry for this host from the /.ssh/known_hosts file")
-
-    @mock.patch.object(ssh, 'LOG')
-    def test_logging_when_reraising_other_exc(self, mock_LOG):
-        self.client.private_key = self.rsakey
-        paramiko.SSHClient.connect.side_effect = Exception
-        self.assertRaises(Exception,
-                          self.client.connect)
-        err = mock_LOG.info.call_args[0][-1]
-        mock_LOG.info.assert_called_with(
-            'ssh://%s@%s:%d failed.  %s',
-            'test-user', '123.456.789.0', 22, err)
-
-    def test_reraising_other_exc(self):
-        self.client.private_key = self.rsakey
-        paramiko.SSHClient.connect.side_effect = (
-            paramiko.BadHostKeyException(None, None, None))
-        self.assertRaises(paramiko.BadHostKeyException,
-                          self.client.connect)
-
-    def test_default_user_is_root(self):
+    def test_default_user_is_root(self, mock_LOG):
         self.client = ssh.SSH('123.456.789.0')
-        self.client.connect()
-        default = paramiko.SSHClient.connect.call_args[1]['username']
+        self.client._connect()
+        default = self.mock_connect.call_args[1]['username']
         self.assertEqual(default, 'root')
 
-    def test_missing_host_key_policy(self):
+    @mock.patch.object(ssh, 'LOG')
+    def test_missing_host_key_policy(self, mock_LOG):
         client = ssh.connect(
             "123.456.789.0", options={'StrictHostKeyChecking': 'no'})
-        client.connect()
-        self.assertIsInstance(
-            client._policy, ssh.AcceptMissingHostKey)
+        client._connect()
+        self.assertIsInstance(client._policy, ssh.AcceptMissingHostKey)
 
-    def test_adds_missing_host_key(self):
+    @mock.patch.object(ssh, 'LOG')
+    def test_adds_missing_host_key(self, mock_LOG):
         client = ssh.connect(
             "123.456.789.0", options={'StrictHostKeyChecking': 'no'})
-        client.connect()
-        pkey = client._get_pkey(self.rsakey)
+        client._connect()
+        pkey = ssh.make_pkey(self.rsakey)
         client._policy.missing_host_key(
             client,
             "123.456.789.0",
@@ -302,18 +386,84 @@ class TestSSHConnect(TestSSHKeys):
         self.assertEqual(expected, client._host_keys)
 
 
+class TestSSHConnect(TestSSHKeys):
+
+    def setUp(self):
+        super(TestSSHConnect, self).setUp()
+        self.host = '123.456.789.0'
+        self.client = ssh.SSH(self.host, username='test-user')
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super(TestSSHConnect, self).tearDown()
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_logging_when_badhostkey(self, mock_LOG):
+        """Test when raising BadHostKeyException."""
+        self.client.password = "foo"
+        self.client.private_key = self.rsakey
+        exc = paramiko.BadHostKeyException(None, None, None)
+        self.mock_connect.side_effect = exc
+        try:
+            self.client.connect()
+        except paramiko.BadHostKeyException:
+            pass
+        mock_LOG.info.assert_called_with(
+            "ssh://%s@%s:%d failed:  %s. "
+            "You might have a bad key entry on your server, "
+            "but this is a security issue and won't be handled "
+            "automatically. To fix this you can remove the "
+            "host entry for this host from the /.ssh/known_hosts file",
+            'test-user', '123.456.789.0', 22, exc)
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_logging_when_reraising_other_exc(self, mock_LOG):
+        self.client.password = "foo"
+        exc = paramiko.SSHException()
+        self.mock_connect.side_effect = exc
+        self.assertRaises(paramiko.SSHException, self.client.connect)
+        mock_LOG.info.assert_any_call(
+            'ssh://%s@%s:%d failed.  %s',
+            'test-user', '123.456.789.0', 22, exc)
+
+    def test_reraising_bad_host_key_exc(self):
+        self.client.password = "foo"
+        self.client.private_key = self.rsakey
+        exc = paramiko.BadHostKeyException(None, None, None)
+        self.mock_connect.side_effect = exc
+        self.assertRaises(paramiko.BadHostKeyException,
+                          self.client.connect)
+
+    @mock.patch.object(ssh, 'LOG')
+    def test_logging_use_password_on_exc_positive(self, mock_LOG):
+        self.client.password = 'test-password'
+        self.mock_connect.side_effect = paramiko.PasswordRequiredException
+        self.assertRaises(paramiko.PasswordRequiredException,
+                          self.client.connect)
+        mock_LOG.debug.assert_any_call('Trying to connect with password')
+
+
 class TestTestConnection(TestSSHKeys):
 
     def setUp(self):
         super(TestTestConnection, self).setUp()
         self.host = '123.456.789.0'
         self.client = ssh.SSH(self.host, username='test-user')
-        paramiko.SSHClient.connect = mock.MagicMock()
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super(TestTestConnection, self).tearDown()
 
     def test_test_connection(self):
         self.assertTrue(self.client.test_connection())
 
-    def test_test_connection_fail_invalid_key(self):
+    @mock.patch.object(ssh.SSH, "connect_with_host_keys")
+    def test_test_connection_fail_invalid_key(self, mock_keys):
+        mock_keys.side_effect = Exception()
         self.client.private_key = self.invalidkey
         self.assertFalse(self.client.test_connection())
 
@@ -322,13 +472,15 @@ class TestTestConnection(TestSSHKeys):
         self.assertTrue(self.client.test_connection())
 
     def test_test_connection_fail_other(self):
-        paramiko.SSHClient.connect.side_effect = Exception
+        self.mock_connect.side_effect = Exception
         self.assertFalse(self.client.test_connection())
 
     @mock.patch.object(ssh, 'LOG')
     def test_test_connection_logging(self, mock_LOG):
         self.client.test_connection()
-        mock_LOG.debug.assert_called_with(
+        mock_LOG.debug.assert_any_call(
+            "Trying to connect with local host keys")
+        mock_LOG.debug.assert_any_call(
             'ssh://%s@%s:%d is up.', 'test-user', self.host, 22)
 
 
@@ -336,16 +488,18 @@ class TestGetProxySocket(TestSSHKeys):
 
     def setUp(self):
         super(TestGetProxySocket, self).setUp()
-        paramiko.ProxyCommand = mock.MagicMock()
-        paramiko.SSHClient.connect = mock.MagicMock()
+        self.proxy_patcher = mock.patch.object(paramiko, "ProxyCommand")
+        self.proxy_patcher.start()
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
         self.proxy = ssh.SSH('proxy.address', username='proxy-user')
         self.client = ssh.SSH('123.546.789.0', username='client-user')
         self.mutable = [True]
 
     def tearDown(self):
+        self.proxy_patcher.stop()
+        self.patcher.stop()
         super(TestGetProxySocket, self).tearDown()
-        self.proxy.close()
-        self.client.close()
 
     def test_get_proxy_socket(self):
         self.client._get_proxy_socket(self.proxy)
@@ -385,8 +539,10 @@ class TestRemoteExecute(TestSSHKeys):
 
     def setUp(self):
         super(TestRemoteExecute, self).setUp()
-        paramiko.ProxyCommand = mock.MagicMock()
-        paramiko.SSHClient.connect = mock.MagicMock()
+        self.proxy_patcher = mock.patch.object(paramiko, "ProxyCommand")
+        self.proxy_patcher.start()
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
         self.client = ssh.SSH('123.456.789.0', username='client-user')
         self.client._handle_password_prompt = mock.Mock(return_value=False)
 
@@ -403,6 +559,11 @@ class TestRemoteExecute(TestSSHKeys):
 
         self.example_command = 'echo hello'
         self.example_output = 'hello'
+
+    def tearDown(self):
+        self.proxy_patcher.stop()
+        self.patcher.stop()
+        super(TestRemoteExecute, self).tearDown()
 
     def mkfile(self, arg, err=False, stdoutput=None):
         if arg == 'rb' and not err:
@@ -469,8 +630,10 @@ class TestRemoteExecuteWithProxy(TestSSHKeys):
 
     def setUp(self):
         super(TestRemoteExecuteWithProxy, self).setUp()
-        paramiko.ProxyCommand = mock.MagicMock()
-        paramiko.SSHClient.connect = mock.MagicMock()
+        self.proxy_patcher = mock.patch.object(paramiko, "ProxyCommand")
+        self.proxy_patcher.start()
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
         proxy = ssh.SSH('proxy-address', username='proxy-user')
         self.client = ssh.SSH(
             '123.456.789.0', username='client-user', proxy=proxy)
@@ -490,6 +653,11 @@ class TestRemoteExecuteWithProxy(TestSSHKeys):
 
         self.example_command = 'echo hello'
         self.example_output = 'hello'
+
+    def tearDown(self):
+        self.proxy_patcher.stop()
+        self.patcher.stop()
+        super(TestRemoteExecuteWithProxy, self).tearDown()
 
     def mkfile(self, arg, err=False):
         if arg == 'rb' and not err:
@@ -518,24 +686,21 @@ class TestProxy(TestSSHKeys):
 
     def setUp(self):
         super(TestProxy, self).setUp()
-        paramiko.ProxyCommand = mock.MagicMock()
-        paramiko.SSHClient.connect = mock.MagicMock()
+        self.proxy_patcher = mock.patch.object(paramiko, "ProxyCommand")
+        self.proxy_patcher.start()
+        self.patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = self.patcher.start()
         self.proxy = ssh.SSH('proxy.address', username='proxy-user')
 
     def tearDown(self):
+        self.patcher.stop()
+        self.proxy_patcher.stop()
         super(TestProxy, self).tearDown()
-        self.proxy.close()
 
     def test_test_connection(self):
         self.client = ssh.SSH(
             '123.456.789.0', username='client-user', proxy=self.proxy)
         self.assertTrue(self.client.test_connection())
-
-    def test_test_connection_fail_invalid_key(self):
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
-        self.client.private_key = self.invalidkey
-        self.assertFalse(self.client.test_connection())
 
     def test_test_connection_valid_key(self):
         self.client = ssh.SSH(
@@ -546,7 +711,7 @@ class TestProxy(TestSSHKeys):
     def test_test_connection_fail_other(self):
         self.client = ssh.SSH(
             '123.456.789.0', username='client-user', proxy=self.proxy)
-        paramiko.SSHClient.connect.side_effect = Exception
+        self.mock_connect.side_effect = Exception
         self.assertFalse(self.client.test_connection())
 
     def test_connect_with_proxy_socket(self):
