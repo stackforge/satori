@@ -34,3 +34,8 @@ class SatoriException(Exception):
 class SatoriInvalidNetloc(SatoriException):
 
     """Netloc that cannot be parsed by `urlparse`."""
+
+
+class SatoriShellException(SatoriException):
+
+    """Invalid shell parameters."""
