@@ -18,7 +18,6 @@ class SatoriException(Exception):
     """Parent class for Satori exceptions.
 
     Accepts a string error message that that accept a str description.
-
     """
 
     def __init__(self, message):
@@ -44,3 +43,28 @@ class SatoriShellException(SatoriException):
 class GetPTYRetryFailure(SatoriException):
 
     """Tried to re-run command with get_pty to no avail."""
+
+
+class DiscoveryException(SatoriException):
+
+    """Discovery exception with custom message."""
+
+
+class SystemInfoCommandMissing(DiscoveryException):
+
+    """Command that provides system information is missing."""
+
+
+class SystemInfoCommandOld(DiscoveryException):
+
+    """Command that provides system information is outdated."""
+
+
+class SystemInfoNotJson(DiscoveryException):
+
+    """Command did not produce valid JSON."""
+
+
+class SystemInfoCommandInstallFailed(DiscoveryException):
+
+    """Failed to install package that provides system information."""

@@ -14,4 +14,7 @@ Address:
         {{ name }}:{% for address in addresses %}
             {{ address.addr }}{% endfor %}{% endfor %}
 {% else %}Host not found
+{% endif %}{% if data.host.system_info %}Packages:
+{% for name, package in data.host.system_info.packages.iteritems() %}      {{ name }}:  {{ package.version }}
+{% endfor %}
 {% endif %}
