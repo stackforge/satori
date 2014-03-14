@@ -1,5 +1,7 @@
 iso8601>=0.1.9
 Jinja2
+# python3 branch of paramiko
+https://github.com/paramiko/paramiko/archive/python3.zip#egg=paramiko-1.13.0
 pbr>=0.5.21,<1.0
 python-novaclient==2.15.0
 # pythonwhois with python 3.3 readiness patch
