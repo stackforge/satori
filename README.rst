@@ -57,7 +57,7 @@ Or::
 
 Notice the discovery result now contains a ``Host`` section::
 
-   $ satori discover www.foo.com
+   $ satori www.foo.com
    Domain: foo.com
      Registered at TUCOWS DOMAINS INC.
      Expires in 475 days.
