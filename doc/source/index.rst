@@ -15,18 +15,30 @@ Satori is a configuration discovery tool for OpenStack and OpenStack tenant host
 Get Satori
 ------------
 
-To install satori, simply run pip install.
+Satori is distributed as a Python package. The pip command will install the
+latest version.
 
 ::
 
    $ pip install satori
+
+If you want to install from the latest source code, these commands will fetch
+the code and install it.
+
+::
+
+   $ git clone https://github.com/stackforge/satori.git
+   $ cd satori
+   $ pip install -r requirements.txt
+   $ sudo python setup.py install
+
 
 Use Satori
 -----------
 
 ::
 
-   $ satori discover www.foo.com
+   $ satori www.foo.com
    Domain: foo.com
      Registered at TUCOWS DOMAINS INC.
      Expires in 475 days.
@@ -48,19 +60,6 @@ Use Satori
              4.4.4.4
          private:
              10.1.1.156
-     System Information:
-         Ubuntu 12.04 installed
-         Server was rebooted 11 days, 22 hours ago
-         /dev/xvda1 is using 9% of its inodes.
-     Running Services:
-         httpd on 127.0.0.1:8080
-         varnishd on 0.0.0.0:80
-         sshd on 0.0.0.0:22
-     httpd:
-         Using 7 of 100 MaxClients
-
-Please go read more in the README in the `Code`_.
-Also check the `OpenStack Wiki`_'s Getting started section.
 
 
 Links

@@ -1,23 +1,30 @@
 =============
-Terminalogy
+Terminology
 =============
 
 Opinions
-===================
+========
 
 Opinions are being discussed at https://wiki.openstack.org/wiki/Satori/OpinionsProposal.
 
 Control Plane Discovery
 =======================
 
-Using native bindings, client libraries (pyrax, boto, novaclient, libcloud, etc.) or cloud APIs to attain information about a configuration. This requires credentials/api tokens, and could provide: a server's image data, a server's region, a load-balancer's VIPs and nodes, networking info, etc.
+Control plane discovery is the process of making API calls to management
+systems like OpenStack or IT asset management systems. An external management
+system can show relationships between resources that can further improve
+the discovery process. For example, a data plane discovery of a single server
+will reveal that a server has a storage device attached to it. Control plane
+discovery using an OpenStack plugin can reveal the details of the Cinder
+volume.
+
+Satori can load plugins that enable these systems to be queried.
 
 Data Plane Discovery
 ====================
 
-Making direct observations about a configuration by running commands/utilities directly on the system, or accessing and analyzing a system's network interface. This might require login credentials for the host resource, and could provide information ranging from disk usage to packages installed to motherboard fan speeds.
+Data plane discovery is the process of connecting to a resource and using
+native tools to extract information. For example, it can provide information
+about the user list, installed software and processes that are running.
 
-SysInfo Provider
-================
-
-One of any open source applications or utilities that will examine a host machine and return verbose information about that system. Satori will leverage/support these tools for Data Plane Discovery.
+Satori can load plugins that enable data plane discovery.
