@@ -2,18 +2,16 @@
 Contributing
 ============
 
-Upstream code and mirroring is hosted on `GitHub`_. Satori is
-currently following Github workflow that includes:
+Satori's code is hosted on `GitHub`_. Our development process follows the
+`OpenStack Gerrit`_ workflow which is much different than most projects on
+Github.
 
-1. Fork code from `Github`_.
-#. Create a feature branch.
-#. Create awesome code.
-#. Push the new feature branch to `Github`_.
-#. Submit pull request through `Github`_.
+If you find a problem, please `file a bug`_. Feature additions and design
+discussions are taking place in `blueprints`_. `Reviewing code`_ is an easy way
+to start contributing.
 
-Bug tracking for the satori project is on  `Launchpad`_. Submit
-code to the openstack satori project using `Github`_. Feature
-additions and design discussions happen using blueprints on `Launchpad`_
-
+.. _OpenStack Gerrit: https://wiki.openstack.org/wiki/Gerrit_Workflow
 .. _GitHub: https://github.com/stackforge/satori
-.. _Launchpad: https://launchpad.net/satori
+.. _file a bug: https://bugs.launchpad.net/satori
+.. _blueprints: https://blueprints.launchpad.net/satori
+.. _Reviewing code: https://review.openstack.org/#/q/status:open+project:stackforge/satori,n,z
