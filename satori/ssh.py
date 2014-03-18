@@ -340,7 +340,7 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
         return False
 
-    def remote_execute(self, command, with_exit_code=False, get_pty=False):
+    def remote_execute(self, command, with_exit_code=False, get_pty=False, wd=None):
         """Execute an ssh command on a remote host.
 
         Tries cert auth first and falls back
@@ -348,11 +348,20 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
         :param command:         Shell command to be executed by this function.
         :param with_exit_code:  Include the exit_code in the return body.
+        :param wd:              The child's current directory will be changed
+                                to `wd` before it is executed. Note that this
+                                directory is not considered when searching the
+                                executable, so you can't specify the program's
+                                path relative to this argument
         :param get_pty:         Request a pseudo-terminal from the server.
 
         :returns: a dict with stdin, stdout,
                   and (optionally) the exit code of the call.
         """
+        if wd:
+            prefix = "cd %s && " % wd
+            command = prefix + command
+
         LOG.debug("Executing '%s' on ssh://%s@%s:%s.",
                   command, self.username, self.host, self.port)
         try:

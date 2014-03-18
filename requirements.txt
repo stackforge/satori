@@ -1,3 +1,4 @@
+ipaddress>=1.0.6 # in stdlib as of python3.3
 iso8601>=0.1.9
 Jinja2
 # python3 branch of paramiko

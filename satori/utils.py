@@ -22,6 +22,7 @@ import socket
 import sys
 import time
 
+import ipaddress
 import iso8601
 
 LOG = logging.getLogger(__name__)
@@ -108,3 +109,25 @@ def is_valid_ipv6_address(address):
 def is_valid_ip_address(address):
     """Check if the address supplied is a valid IP address."""
     return is_valid_ipv4_address(address) or is_valid_ipv6_address(address)
+
+
+def get_local_ips():
+    """Return local ipaddress(es)."""
+
+    localnames = ['localhost', '127.0.0.1']
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect(('8.8.8.8', 80))
+        localnames.append(sock.getsockname()[0])
+    except socket.error:
+        pass
+    finally:
+        sock.close()
+
+    localnames.append(socket.gethostbyname(socket.gethostname()))
+    localnames.append(socket.gethostbyname(socket.getfqdn()))
+    localnames = list(set(localnames))
+    return localnames
+
+
+

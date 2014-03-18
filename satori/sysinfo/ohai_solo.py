@@ -15,10 +15,13 @@
 import json
 import logging
 
+import ipaddress as ipaddress_module
 import six
 
+from satori import bash
 from satori import errors
 from satori import ssh
+from satori import utils
 
 LOG = logging.getLogger(__name__)
 if six.PY3:
@@ -34,17 +37,25 @@ def get_systeminfo(ipaddress, config, interactive=False):
     :param config: arguments and configuration suppplied to satori.
     :keyword interactive: whether to prompt the user for information.
     """
-    ssh_client = ssh.connect(ipaddress, username=config.host_username,
-                             private_key=config.host_key,
-                             interactive=interactive)
-    install_remote(ssh_client)
-    return system_info(ssh_client)
+    if (ipaddress in utils.get_local_ips() or
+            ipaddress_module.ip_address(unicode(ipaddress)).is_loopback):
+
+        client = bash.LocalShell()
+        client.host = "localhost"
+        client.port = 0
+
+    else:
+        client = bash.RemoteShell(ipaddress, username=config.host_username,
+                                  private_key=config.host_key, interactive=interactive)
+
+    install_remote(client)
+    return system_info(client)
 
 
-def system_info(ssh_client):
+def system_info(client):
     """Run ohai-solo on a remote system and gather the output.
 
-    :param ssh_client: :class:`ssh.SSH` instance
+    :param client: :class:`ssh.SSH` instance
     :returns: dict -- system information from ohai-solo
     :raises: SystemInfoCommandMissing, SystemInfoCommandOld, SystemInfoNotJson
 
@@ -52,13 +63,13 @@ def system_info(ssh_client):
         SystemInfoCommandOld if `ohai` is not the latest.
         SystemInfoNotJson if `ohai` does not return valid json.
     """
-    output = ssh_client.remote_execute("sudo -i ohai-solo")
+    output = client.execute("sudo -i ohai-solo")
     not_found_msgs = ["command not found", "Could not find ohai"]
     if any(m in k for m in not_found_msgs
            for k in list(output.values()) if isinstance(k, six.string_types)):
-        LOG.warning("SystemInfoCommandMissing on host: [%s]", ssh_client.host)
+        LOG.warning("SystemInfoCommandMissing on host: [%s]", client.host)
         raise errors.SystemInfoCommandMissing("ohai-solo missing on %s",
-                                              ssh_client.host)
+                                              client.host)
     try:
         results = json.loads(unicode(output['stdout'], errors='replace'))
     except ValueError as exc:
@@ -76,21 +87,21 @@ def is_fedora(platform):
     return platform['dist'].lower() in ['redhat', 'centos', 'fedora', 'el']
 
 
-def install_remote(ssh_client):
+def install_remote(client):
     """Install ohai-solo on remote system."""
     LOG.info("Installing (or updating) ohai-solo on device %s at %s:%d",
-             ssh_client.host, ssh_client.host, ssh_client.port)
+             client.host, client.host, client.port)
     # Download to host
-    command = "cd /tmp && sudo wget -N http://ohai.rax.io/install.sh"
-    ssh_client.remote_execute(command)
+    command = "sudo wget -N http://ohai.rax.io/install.sh"
+    client.execute(command, wd='/tmp')
 
     # Run install
-    command = "cd /tmp && bash install.sh"
-    output = ssh_client.remote_execute(command, with_exit_code=True)
+    command = "sudo bash install.sh"
+    output = client.execute(command, wd='/tmp', with_exit_code=True)
 
     # Be a good citizen and clean up your tmp data
-    command = "cd /tmp && rm install.sh"
-    ssh_client.remote_execute(command)
+    command = "sudo rm install.sh"
+    client.execute(command, wd='/tmp')
 
     # Process install command output
     if output['exit_code'] != 0:
@@ -99,7 +110,7 @@ def install_remote(ssh_client):
         return output
 
 
-def remove_remote(ssh_client):
+def remove_remote(client):
     """Remove ohai-solo from specifc remote system.
 
     Currently supports:
@@ -108,7 +119,7 @@ def remove_remote(ssh_client):
         - redhat [5.x, 6.x]
         - centos [5.x, 6.x]
     """
-    platform_info = ssh_client.platform_info
+    platform_info = client.platform_info
     if is_debian(platform_info):
         remove = "sudo dpkg --purge ohai-solo"
     elif is_fedora(platform_info):
@@ -116,6 +127,6 @@ def remove_remote(ssh_client):
     else:
         raise errors.UnsupportedPlatform("Unknown distro: %s" %
                                          platform_info['dist'])
-    command = "cd /tmp && %s" % remove
-    output = ssh_client.remote_execute(command)
+    command = "%s" % remove
+    output = client.execute(command, wd='/tmp')
     return output
