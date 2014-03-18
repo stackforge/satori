@@ -85,16 +85,6 @@ def system_info(client):
     return results
 
 
-def is_debian(platform):
-    """Return true if the platform is a debian-based distro."""
-    return platform['dist'].lower() in ['debian', 'ubuntu']
-
-
-def is_fedora(platform):
-    """Return true if the platform is a fedora-based distro."""
-    return platform['dist'].lower() in ['redhat', 'centos', 'fedora', 'el']
-
-
 def install_remote(client):
     """Install ohai-solo on remote system."""
     LOG.info("Installing (or updating) ohai-solo on device %s at %s:%d",
@@ -128,9 +118,9 @@ def remove_remote(client):
         - centos [5.x, 6.x]
     """
     platform_info = client.platform_info
-    if is_debian(platform_info):
+    if client.is_debian():
         remove = "sudo dpkg --purge ohai-solo"
-    elif is_fedora(platform_info):
+    elif client.is_fedora():
         remove = "sudo yum -y erase ohai-solo"
     else:
         raise errors.UnsupportedPlatform("Unknown distro: %s" %
