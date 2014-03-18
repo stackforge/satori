@@ -17,7 +17,9 @@
 """
 
 import datetime
+import inspect
 import logging
+import platform
 import socket
 import sys
 import time
@@ -135,3 +137,85 @@ def get_local_ips():
         LOG.debug("Error in getaddrinfo: %s", exc)
 
     return list(set(list1 + list2 + defaults))
+
+
+def get_platform_info():
+    """Return a dictionary with distro, version, and system architecture.
+
+    Requires >= Python 2.4 (2004)
+
+    Supports most Linux distros, Mac OSX, and Windows.
+
+    Example return value on Mac OSX:
+
+        {'arch': '64bit', 'version': '10.8.5', 'dist': 'darwin'}
+
+    """
+    pin = list(platform.dist() + (platform.machine(),))
+    pinfodict = {'dist': pin[0], 'version': pin[1], 'arch': pin[3]}
+    if not pinfodict['dist'] or not pinfodict['version']:
+        pinfodict['dist'] = sys.platform.lower()
+        pinfodict['arch'] = platform.architecture()[0]
+        if 'darwin' in pinfodict['dist']:
+            pinfodict['version'] = platform.mac_ver()[0]
+        elif pinfodict['dist'].startswith('win'):
+            pinfodict['version'] = str(platform.platform())
+
+    return pinfodict
+
+
+def get_source_definition(function, with_docstring=False):
+    """Get the entire body of a function, including the signature line.
+
+    :param with_docstring: Include docstring in return value.
+                           Default is False. Supports docstrings in
+                           triple double-quotes or triple single-quotes.
+    """
+    thedoc = inspect.getdoc(function)
+    definition = inspect.cleandoc(
+        inspect.getsource(function))
+    if thedoc and not with_docstring:
+        definition = definition.replace(thedoc, '')
+        doublequotes = definition.find('"""')
+        doublequotes = float("inf") if doublequotes == -1 else doublequotes
+        singlequotes = definition.find("'''")
+        singlequotes = float("inf") if singlequotes == -1 else singlequotes
+        if doublequotes != singlequotes:
+            triplet = '"""' if doublequotes < singlequotes else "'''"
+            definition = definition.replace(triplet, '', 2)
+    while definition.find('\n\n\n') != -1:
+        definition = definition.replace('\n\n\n', '\n\n')
+
+    definition_copy = []
+    for line in definition.split('\n'):
+        # pylint: disable=W0141
+        if not any(map(line.strip().startswith, ("@", "def"))):
+            line = " "*4 + line
+        definition_copy.append(line)
+
+    return "\n".join(definition_copy).strip()
+
+
+def get_source_body(function, with_docstring=False):
+    """Get the body of a function (i.e. no definition line, unindented).
+
+    :param with_docstring: Include docstring in return value.
+                           Default is False.
+    """
+    lines = get_source_definition(
+        function, with_docstring=with_docstring).split('\n')
+
+    # Find body - skip decorators and definition
+    start = 0
+    for number, line in enumerate(lines):
+        # pylint: disable=W0141
+        if any(map(line.strip().startswith, ("@", "def"))):
+            start = number + 1
+
+    lines = lines[start:]
+
+    # Unindent body
+    indent = len(lines[0]) - len(lines[0].lstrip())
+    for index, line in enumerate(lines):
+        lines[index] = line[indent:]
+    return '\n'.join(lines).strip()

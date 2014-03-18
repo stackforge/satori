@@ -21,6 +21,11 @@ class SatoriException(Exception):
     """
 
 
+class UndeterminedPlatform(SatoriException):
+
+    """The target system's platform could not be determined."""
+
+
 class SatoriInvalidNetloc(SatoriException):
 
     """Netloc that cannot be parsed by `urlparse`."""
