@@ -69,5 +69,42 @@ class TestTimeUtils(unittest.TestCase):
         self.assertEqual(result, datetime.datetime(1970, 2, 1, 11, 2, 3, 0))
 
 
+class TestGetSource(unittest.TestCase):
+
+    def setUp(self):
+        self.code_string = ('the_problem = "not the problem"\n'
+                            'return the_problem\n')
+
+    def get_my_source_one_line_docstring(self):
+        """A beautiful docstring."""
+        the_problem = "not the problem"
+        return the_problem
+
+    def get_my_source_multiline_docstring(self):
+        """A beautiful docstring.
+
+        Is a terrible thing to waste.
+        """
+        the_problem = "not the problem"
+        return the_problem
+
+    def test_get_source(self):
+        nab = utils.get_source_body(self.get_my_source_one_line_docstring)
+        self.assertEqual(self.code_string, nab)
+
+    def test_get_source_with_docstring(self):
+        nab = utils.get_source_body(self.get_my_source_one_line_docstring,
+                                    with_docstring=True)
+        copy = '"""A beautiful docstring."""\n' + self.code_string
+        self.assertEqual(copy, nab)
+
+    def test_get_source_with_multiline_docstring(self):
+        nab = utils.get_source_body(self.get_my_source_multiline_docstring,
+                                    with_docstring=True)
+        copy = ('"""A beautiful docstring.\n\n'
+                'Is a terrible thing to waste.\n"""\n' + self.code_string)
+        self.assertEqual(copy, nab)
+
+
 if __name__ == '__main__':
     unittest.main()

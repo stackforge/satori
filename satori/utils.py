@@ -17,7 +17,9 @@
 """
 
 import datetime
+import inspect
 import logging
+import platform
 import socket
 import sys
 import time
@@ -135,3 +137,62 @@ def get_local_ips():
         LOG.debug("Error in getaddrinfo: %s", exc)
 
     return list(set(list1 + list2 + defaults))
+
+
+def get_platform_info():
+    """Return a dictionary with distro, version, and system architecture.
+
+    Requires >= Python 2.4 (2004)
+
+    Supports most Linux distros, Mac OSX, and Windows.
+
+    Example return value on Mac OSX:
+
+        {'arch': '64bit', 'version': '10.8.5', 'dist': 'darwin'}
+
+    """
+    pin = list(platform.dist() + (platform.machine(),))
+    pinfodict = {'dist': pin[0], 'version': pin[1], 'arch': pin[3]}
+    if not pinfodict['dist'] or not pinfodict['version']:
+        pinfodict['dist'] = sys.platform.lower()
+        pinfodict['arch'] = platform.architecture()[0]
+        if 'darwin' in pinfodict['dist']:
+            pinfodict['version'] = platform.mac_ver()[0]
+        elif pinfodict['dist'].startswith('win'):
+            pinfodict['version'] = str(platform.platform())
+
+    return pinfodict
+
+
+def get_source_body(function, with_docstring=False):
+    """Get the body of a function (i.e. no definition line, and unindented.
+
+    :param with_docstring: Include docstring in return value.
+                           Default is False.
+    """
+    lines = inspect.getsource(function).split('\n')
+
+    # Find body - skip decorators and definition
+    start = 0
+    for number, line in enumerate(lines):
+        if line.strip().startswith("@"):
+            start = number + 1
+        elif line.strip().startswith("def "):
+            start = number + 1
+            if with_docstring:
+                break
+        if not with_docstring:
+            if (line.strip().startswith('"""') and
+                    line.strip().endswith('"""')):
+                start = number + 1
+                break
+            elif line.strip().startswith('"""'):
+                start = number + 1
+
+    lines = lines[start:]
+
+    # Unindent body
+    indent = len(lines[0]) - len(lines[0].lstrip())
+    for index, line in enumerate(lines):
+        lines[index] = line[indent:]
+    return '\n'.join(lines)
