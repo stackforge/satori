@@ -49,6 +49,21 @@ TTY_REQUIRED = [
     "no tty present",
 ]
 
+PLATFORM_COMMAND = (
+    '''"""import platform, sys
+pinfo = list(platform.dist() + (platform.machine(),))
+pinfodict = {'dist': pinfo[0].lower(), 'version': pinfo[1],
+             'arch': pinfo[3]}
+if (not pinfodict['dist'] or not pinfodict['version']):
+    pinfodict['dist'] = sys.platform.lower()
+    pinfodict['arch'] = platform.architecture()[0]
+    if 'darwin' in pinfodict['dist']:
+        pinfodict['version'] = platform.mac_ver()[0]
+    elif pinfodict['dist'].startswith('win'):
+        pinfodict['version'] = str(platform.platform())
+sys.stdout.write(str(pinfodict))"""'''
+)
+
 
 def make_pkey(private_key):
     """Return a paramiko.pkey.PKey from private key string."""
@@ -157,16 +172,13 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
     def platform_info(self):
         """Return distro, version, architecture."""
         if not self._platform_info:
-            command = ('python -c '
-                       '"""import sys,platform as p;'
-                       'plat=list(p.dist()+(p.machine(),));'
-                       'sys.stdout.write(str(plat))"""')
+
+            command = 'echo -e %s | python' % PLATFORM_COMMAND
 
             output = self.remote_execute(command)
             stdout = re.split('\n|\r\n', output['stdout'])[-1].strip()
             plat = ast.literal_eval(stdout)
-            self._platform_info = {'dist': plat[0].lower(), 'version': plat[1],
-                                   'arch': plat[3]}
+            self._platform_info = plat
 
         LOG.debug("Remote platform info: %s", self._platform_info)
         return self._platform_info

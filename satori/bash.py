@@ -22,7 +22,9 @@ import logging
 import platform
 import shlex
 import subprocess
+import sys
 
+from satori import errors
 from satori import ssh
 
 LOG = logging.getLogger(__name__)
@@ -51,19 +53,41 @@ class ShellMixin(object):
         pass
 
     def is_debian(self):
-        """Return a boolean indicating whether the system is debian based.
+        """Indicate whether the system is debian based.
 
         Uses the platform_info property.
         """
+        if not self.platform_info['dist']:
+            raise errors.UndeterminedPlatform(
+                'Unable to determine whether the system is Debian based.')
         return self.platform_info['dist'].lower() in ['debian', 'ubuntu']
 
     def is_fedora(self):
-        """Return a boolean indicating whether the system in fedora based.
+        """Indicate whether the system in fedora based.
 
         Uses the platform info property.
         """
+        if not self.platform_info['dist']:
+            raise errors.UndeterminedPlatform(
+                'Unable to determine whether the system is Fedora based.')
         return (self.platform_info['dist'].lower() in
                 ['redhat', 'centos', 'fedora', 'el'])
+
+    def is_osx(self):
+        """Indicate whether the system is apple osx based."""
+        if not self.platform_info['dist']:
+            raise errors.UndeterminedPlatform(
+                'Unable to determine whether the system is OS X based.')
+        return (self.platform_info['dist'].lower() in
+                ['darwin', 'macosx'])
+
+    def is_windows(self):
+        """Indicate whether the system is apple osx based."""
+        if not self.platform_info['dist']:
+            raise errors.UndeterminedPlatform(
+                'Unable to determine whether the system is Windows based.')
+
+        return self.platform_info['dist'].startswith('win')
 
 
 class LocalShell(ShellMixin):
@@ -87,7 +111,19 @@ class LocalShell(ShellMixin):
     @property
     def platform_info(self):
         """Return distro, version, and system architecture."""
-        return list(platform.dist() + (platform.machine(),))
+        pinfo = list(platform.dist() + (platform.machine(),))
+        pinfodict = {'dist': pinfo[0].lower(), 'version': pinfo[1],
+                     'arch': pinfo[3]}
+
+        if any(not k for k in pinfodict.values()):
+            pinfodict['dist'] = sys.platform.lower()
+            pinfodict['arch'] = platform.architecture()[0]
+            if 'darwin' in pinfodict['dist']:
+                pinfodict['version'] = platform.mac_ver()[0]
+            elif pinfodict['dist'].startswith('win'):
+                pinfodict['version'] = str(platform.platform())
+
+        return pinfodict
 
     def execute(self, command, wd=None, with_exit_code=None):
         """Execute a command (containing no shell operators) locally."""
