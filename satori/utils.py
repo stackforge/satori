@@ -108,3 +108,30 @@ def is_valid_ipv6_address(address):
 def is_valid_ip_address(address):
     """Check if the address supplied is a valid IP address."""
     return is_valid_ipv4_address(address) or is_valid_ipv6_address(address)
+
+
+def get_local_ips():
+    """Return local ipaddress(es)."""
+    # pylint: disable=W0703
+    list1 = []
+    list2 = []
+    defaults = ["127.0.0.1", r"fe80::1%lo0"]
+
+    hostname = None
+    try:
+        hostname = socket.gethostname()
+    except Exception as exc:
+        LOG.debug("Error in gethostbyname_ex: %s", exc)
+
+    try:
+        _, _, addresses = socket.gethostbyname_ex(hostname)
+        list1 = [ip for ip in addresses]
+    except Exception as exc:
+        LOG.debug("Error in gethostbyname_ex: %s", exc)
+
+    try:
+        list2 = [info[4][0] for info in socket.getaddrinfo(hostname, None)]
+    except Exception as exc:
+        LOG.debug("Error in getaddrinfo: %s", exc)
+
+    return list(set(list1 + list2 + defaults))

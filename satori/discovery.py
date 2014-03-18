@@ -23,7 +23,9 @@ Example usage:
 
 from __future__ import print_function
 
+import ipaddress as ipaddress_module
 from novaclient.v1_1 import client
+from pythonwhois import shared
 import six
 
 from satori import dns
@@ -37,7 +39,17 @@ def run(address, config, interactive=False):
         ipaddress = address
     else:
         ipaddress = dns.resolve_hostname(address)
-        results['domain'] = dns.domain_info(address)
+        #TODO(sam): Use ipaddress.ip_address.is_global
+        #                   "               .is_private
+        #                   "               .is_unspecified
+        #                   "               .is_multicast
+        #       To determine address "type"
+        if not ipaddress_module.ip_address(unicode(ipaddress)).is_loopback:
+            try:
+                results['domain'] = dns.domain_info(address)
+            except shared.WhoisException as exc:
+                results['domain'] = str(exc)
+
     results['address'] = ipaddress
 
     results['host'] = host = {'type': 'Undetermined'}
