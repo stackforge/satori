@@ -38,6 +38,7 @@ import paramiko
 import six
 
 from satori import errors
+from satori import utils
 
 LOG = logging.getLogger(__name__)
 MIN_PASSWORD_PROMPT_LEN = 8
@@ -155,18 +156,22 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
     @property
     def platform_info(self):
-        """Return distro, version, architecture."""
-        if not self._platform_info:
-            command = ('python -c '
-                       '"""import sys,platform as p;'
-                       'plat=list(p.dist()+(p.machine(),));'
-                       'sys.stdout.write(str(plat))"""')
+        """Return distro, version, architecture.
 
+        Requires >= Python 2.4 on remote system.
+        """
+        if not self._platform_info:
+
+            platform_command = "import platform,sys\n"
+            platform_command += utils.get_source_definition(
+                utils.get_platform_info)
+            platform_command += ("\nsys.stdout.write(str("
+                                 "get_platform_info()))\n")
+            command = 'echo -e """%s""" | python' % platform_command
             output = self.remote_execute(command)
             stdout = re.split('\n|\r\n', output['stdout'])[-1].strip()
             plat = ast.literal_eval(stdout)
-            self._platform_info = {'dist': plat[0].lower(), 'version': plat[1],
-                                   'arch': plat[3]}
+            self._platform_info = plat
 
         LOG.debug("Remote platform info: %s", self._platform_info)
         return self._platform_info
