@@ -26,13 +26,13 @@ class SomeTZ(datetime.tzinfo):
     """A random timezone."""
 
     def utcoffset(self, dt):
-            return datetime.timedelta(minutes=45)
+        return datetime.timedelta(minutes=45)
 
     def tzname(self, dt):
-            return "STZ"
+        return "STZ"
 
     def dst(self, dt):
-            return datetime.timedelta(0)
+        return datetime.timedelta(0)
 
 
 class TestTimeUtils(unittest.TestCase):
@@ -67,6 +67,64 @@ class TestTimeUtils(unittest.TestCase):
     def test_parse_time_string_with_tz(self):
         result = utils.parse_time_string("1970-02-01 01:02:03 +1000")
         self.assertEqual(result, datetime.datetime(1970, 2, 1, 11, 2, 3, 0))
+
+
+class TestGetSource(unittest.TestCase):
+
+    def setUp(self):
+        self.function_signature = "def get_my_source_oneline_docstring(self):"
+        self.function_oneline_docstring = '"""A beautiful docstring."""'
+        self.function_multiline_docstring = ('"""A beautiful docstring.\n\n'
+                                             'Is a terrible thing to '
+                                             'waste.\n"""')
+        self.function_body = ['the_problem = "not the problem"',
+                              'return the_problem']
+
+    def get_my_source_oneline_docstring(self):
+        """A beautiful docstring."""
+        the_problem = "not the problem"
+        return the_problem
+
+    def get_my_source_multiline_docstring(self):
+        """A beautiful docstring.
+
+        Is a terrible thing to waste.
+        """
+        the_problem = "not the problem"
+        return the_problem
+
+    def test_get_source(self):
+        nab = utils.get_source_body(self.get_my_source_oneline_docstring)
+        self.assertEqual("\n".join(self.function_body), nab)
+
+    def test_get_source_with_docstring(self):
+        nab = utils.get_source_body(self.get_my_source_oneline_docstring,
+                                    with_docstring=True)
+        copy = self.function_oneline_docstring + "\n" + "\n".join(
+            self.function_body)
+        self.assertEqual(copy, nab)
+
+    def test_get_source_with_multiline_docstring(self):
+        nab = utils.get_source_body(self.get_my_source_multiline_docstring,
+                                    with_docstring=True)
+        copy = (self.function_multiline_docstring + "\n" + "\n".join(
+            self.function_body))
+        self.assertEqual(copy, nab)
+
+    def test_get_definition(self):
+        nab = utils.get_source_definition(
+            self.get_my_source_oneline_docstring)
+        copy = "%s\n    \n    %s" % (self.function_signature,
+                                     "\n    ".join(self.function_body))
+        self.assertEqual(copy, nab)
+
+    def test_get_definition_with_docstring(self):
+        nab = utils.get_source_definition(
+            self.get_my_source_oneline_docstring, with_docstring=True)
+        copy = "%s\n    %s\n    %s" % (self.function_signature,
+                                       self.function_oneline_docstring,
+                                       "\n    ".join(self.function_body))
+        self.assertEqual(copy, nab)
 
 
 if __name__ == '__main__':

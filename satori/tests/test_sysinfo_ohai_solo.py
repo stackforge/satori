@@ -72,11 +72,8 @@ class TestOhaiRemove(utils.TestCase):
 
     def test_remove_remote_fedora(self):
         mock_ssh = mock.MagicMock()
-        mock_ssh.platform_info = {
-            'dist': 'centos',
-            'version': "4",
-            'arch': 'xyz'
-        }
+        mock_ssh.is_debian.return_value = False
+        mock_ssh.is_fedora.return_value = True
         response = {'exit_code': 0, 'foo': 'bar'}
         mock_ssh.execute.return_value = response
         result = ohai_solo.remove_remote(mock_ssh)
@@ -86,11 +83,8 @@ class TestOhaiRemove(utils.TestCase):
 
     def test_remove_remote_debian(self):
         mock_ssh = mock.MagicMock()
-        mock_ssh.platform_info = {
-            'dist': 'ubuntu',
-            'version': "4",
-            'arch': 'xyz'
-        }
+        mock_ssh.is_debian.return_value = True
+        mock_ssh.is_fedora.return_value = False
         response = {'exit_code': 0, 'foo': 'bar'}
         mock_ssh.execute.return_value = response
         result = ohai_solo.remove_remote(mock_ssh)
@@ -100,7 +94,8 @@ class TestOhaiRemove(utils.TestCase):
 
     def test_remove_remote_unsupported(self):
         mock_ssh = mock.MagicMock()
-        mock_ssh.platform_info = {'dist': 'amiga'}
+        mock_ssh.is_debian.return_value = False
+        mock_ssh.is_fedora.return_value = False
         self.assertRaises(errors.UnsupportedPlatform,
                           ohai_solo.remove_remote, mock_ssh)
 

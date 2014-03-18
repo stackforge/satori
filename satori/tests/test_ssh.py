@@ -681,8 +681,7 @@ class TestRemoteExecute(SSHTestBase):
         expected_result = dict(zip(fields, [v.lower() for v in platinfo]))
         expected_result.pop('remove')
         self.mock_chan.makefile.side_effect = lambda x: self.mkfile(
-            x, stdoutput=str(platinfo))
-        self.assertEqual(expected_result, self.client.platform_info)
+            x, stdoutput=str(expected_result))
         self.assertEqual(expected_result, self.client.platform_info)
 
 
