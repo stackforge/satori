@@ -340,7 +340,7 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
         return False
 
-    def remote_execute(self, command, with_exit_code=False, get_pty=False):
+    def remote_execute(self, command, with_exit_code=False, get_pty=False, wd=None):
         """Execute an ssh command on a remote host.
 
         Tries cert auth first and falls back
@@ -353,6 +353,10 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         :returns: a dict with stdin, stdout,
                   and (optionally) the exit code of the call.
         """
+        if wd:
+            prefix = "cd %s && " % wd
+            command = prefix + command
+
         LOG.debug("Executing '%s' on ssh://%s@%s:%s.",
                   command, self.username, self.host, self.port)
         try:

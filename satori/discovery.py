@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import socket
 
+import IPy
 from novaclient.v1_1 import client
 import six
 
@@ -68,7 +69,9 @@ def run(address, config, interactive=False):
         ipaddress = address
     else:
         ipaddress = dns.resolve_hostname(address)
-        results['domain'] = dns.domain_info(address)
+        if IPy.IP(ipaddress).iptype() == 'PUBLIC':
+            results['domain'] = dns.domain_info(address)
+
     results['address'] = ipaddress
 
     results['host'] = host = {'type': 'Undetermined'}

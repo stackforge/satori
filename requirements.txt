@@ -1,3 +1,4 @@
+IPy>=0.81
 iso8601>=0.1.9
 Jinja2
 # python3 branch of paramiko
