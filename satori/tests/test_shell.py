@@ -136,5 +136,22 @@ class TestArgParsing(utils.TestCase):
                 exitcodes=[0, 2]
             )
 
+    def test_netloc_parser(self):
+        self.assertEqual(shell.netloc_parser("localhost"),
+                         (None, 'localhost'))
+
+    def test_netloc_parser_both(self):
+        self.assertEqual(shell.netloc_parser("name@address"),
+                         ('name', 'address'))
+
+    def test_netloc_parser_edge(self):
+        self.assertEqual(shell.netloc_parser("@address"),
+                         (None, 'address'))
+        self.assertEqual(shell.netloc_parser("root@"),
+                         ('root', None))
+        self.assertEqual(shell.netloc_parser(""),
+                         (None, None))
+
+
 if __name__ == '__main__':
     unittest.main()
