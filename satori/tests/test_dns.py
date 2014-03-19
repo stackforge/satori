@@ -119,9 +119,10 @@ class TestDNS(utils.TestCase):
             >>> Last update of WHOIS database: 2014-02-18T03:39:52 UTC <<<
             """]
 
-        self.mynet = pythonwhois.net
-        self.mynet.get_whois_raw = mock.MagicMock()
-        self.mynet.get_whois_raw.return_value = self.WHOIS
+        patcher = mock.patch.object(pythonwhois.net, 'get_whois_raw')
+        self.mock_get_whois_raw = patcher.start()
+        self.mock_get_whois_raw.return_value = self.WHOIS
+        self.addCleanup(patcher.stop)
 
         super(TestDNS, self).setUp()
 
@@ -187,7 +188,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mynet.get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois
         data = dns.domain_info(self.domain)
         self.assertEqual(
             [],
@@ -224,7 +225,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mynet.get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois
         data = dns.domain_info(self.domain)
         self.assertEqual(
             data['days_until_expires'],
@@ -244,7 +245,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mynet.get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois
         data = dns.domain_info(self.domain)
         self.assertIsInstance(data['expiration_date'], six.string_types)
 
@@ -260,7 +261,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mynet.get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois
         data = dns.domain_info(self.domain)
         self.assertIsNone(data['expiration_date'])
 

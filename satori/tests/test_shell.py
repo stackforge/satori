@@ -76,8 +76,10 @@ class TestArgParsing(utils.TestCase):
 
     def setUp(self):
         super(TestArgParsing, self).setUp()
-        self.mock_os = shell.os
+        patcher = mock.patch.object(shell, "os")
+        self.mock_os = patcher.start()
         self.mock_os.environ = {}
+        self.addCleanup(patcher.stop)
 
     def make_env(self, exclude=None, fake_env=FAKE_ENV):
         """Create a patched os.environ.

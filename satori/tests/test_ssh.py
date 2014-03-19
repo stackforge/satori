@@ -232,17 +232,14 @@ class SSHTestBase(utils.TestCase):
             -----END DSA PRIVATE KEY-----
             """
 
-        self.connect_patcher = mock.patch.object(paramiko.SSHClient, "connect")
-        self.mock_connect = self.connect_patcher.start()
+        patcher = mock.patch.object(paramiko.SSHClient, "connect")
+        self.mock_connect = patcher.start()
+        self.addCleanup(patcher.stop)
 
-        self.load_patcher = mock.patch.object(paramiko.SSHClient,
-                                              "load_system_host_keys")
-        self.mock_load = self.load_patcher.start()
-
-    def tearDown(self):
-        self.connect_patcher.stop()
-        self.load_patcher.stop()
-        super(SSHTestBase, self).tearDown()
+        patcher = mock.patch.object(paramiko.SSHClient,
+                                    "load_system_host_keys")
+        self.mock_load = patcher.start()
+        self.addCleanup(patcher.stop)
 
 
 class TestSSHKeyConversion(SSHTestBase):
