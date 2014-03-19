@@ -10,6 +10,7 @@ Satori is a configuration discovery tool for OpenStack and OpenStack tenant host
    contributing
    releases
    terminology
+   satori
 
 
 Get Satori
