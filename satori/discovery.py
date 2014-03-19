@@ -23,8 +23,6 @@ Example usage:
 
 from __future__ import print_function
 
-import socket
-
 from novaclient.v1_1 import client
 import six
 
@@ -32,39 +30,10 @@ from satori import dns
 from satori import utils
 
 
-def is_valid_ipv4_address(address):
-    """Check if the address supplied is a valid IPv4 address."""
-    try:
-        socket.inet_pton(socket.AF_INET, address)
-    except AttributeError:  # no inet_pton here, sorry
-        try:
-            socket.inet_aton(address)
-        except socket.error:
-            return False
-        return address.count('.') == 3
-    except socket.error:  # not a valid address
-        return False
-    return True
-
-
-def is_valid_ipv6_address(address):
-    """Check if the address supplied is a valid IPv6 address."""
-    try:
-        socket.inet_pton(socket.AF_INET6, address)
-    except socket.error:  # not a valid address
-        return False
-    return True
-
-
-def is_valid_ip_address(address):
-    """Check if the address supplied is a valid IP address."""
-    return is_valid_ipv4_address(address) or is_valid_ipv6_address(address)
-
-
 def run(address, config, interactive=False):
     """Run discovery and return results."""
     results = {}
-    if is_valid_ip_address(address):
+    if utils.is_valid_ip_address(address):
         ipaddress = address
     else:
         ipaddress = dns.resolve_hostname(address)
