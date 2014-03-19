@@ -61,6 +61,11 @@ class SystemInfoNotJson(DiscoveryException):
     """Command did not produce valid JSON."""
 
 
+class SystemInfoMissingJson(DiscoveryException):
+
+    """Command did not produce stdout containing JSON."""
+
+
 class SystemInfoCommandInstallFailed(DiscoveryException):
 
     """Failed to install package that provides system information."""
