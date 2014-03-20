@@ -111,17 +111,37 @@ class TestSystemInfo(utils.TestCase):
             'stdout': "{}",
             'stderr': ""
         }
-        result = ohai_solo.system_info(mock_ssh)
-        mock_ssh.remote_execute("sudo -i ohai-solo")
+        ohai_solo.system_info(mock_ssh)
+        mock_ssh.remote_execute.assert_called_with("sudo -i ohai-solo")
+
+    def test_system_info_with_motd(self):
+        mock_ssh = mock.MagicMock()
+        mock_ssh.remote_execute.return_value = {
+            'exit_code': 0,
+            'stdout': "Hello world\n {}",
+            'stderr': ""
+        }
+        ohai_solo.system_info(mock_ssh)
+        mock_ssh.remote_execute.assert_called_with("sudo -i ohai-solo")
 
     def test_system_info_bad_json(self):
         mock_ssh = mock.MagicMock()
         mock_ssh.remote_execute.return_value = {
             'exit_code': 0,
-            'stdout': "",
+            'stdout': "{Not JSON!}",
             'stderr': ""
         }
         self.assertRaises(errors.SystemInfoNotJson, ohai_solo.system_info,
+                          mock_ssh)
+
+    def test_system_info_missing_json(self):
+        mock_ssh = mock.MagicMock()
+        mock_ssh.remote_execute.return_value = {
+            'exit_code': 0,
+            'stdout': "No JSON!",
+            'stderr': ""
+        }
+        self.assertRaises(errors.SystemInfoMissingJson, ohai_solo.system_info,
                           mock_ssh)
 
     def test_system_info_command_not_found(self):

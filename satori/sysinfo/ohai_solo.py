@@ -47,10 +47,12 @@ def system_info(ssh_client):
     :param ssh_client: :class:`ssh.SSH` instance
     :returns: dict -- system information from ohai-solo
     :raises: SystemInfoCommandMissing, SystemInfoCommandOld, SystemInfoNotJson
+             SystemInfoMissingJson
 
         SystemInfoCommandMissing if `ohai` is not installed.
         SystemInfoCommandOld if `ohai` is not the latest.
-        SystemInfoNotJson if `ohai` does not return valid json.
+        SystemInfoNotJson if `ohai` does not return valid JSON.
+        SystemInfoMissingJson if `ohai` does not return any JSON.
     """
     output = ssh_client.remote_execute("sudo -i ohai-solo")
     not_found_msgs = ["command not found", "Could not find ohai"]
@@ -59,10 +61,15 @@ def system_info(ssh_client):
         LOG.warning("SystemInfoCommandMissing on host: [%s]", ssh_client.host)
         raise errors.SystemInfoCommandMissing("ohai-solo missing on %s",
                                               ssh_client.host)
+    unicode_output = unicode(output['stdout'], errors='replace')
     try:
-        results = json.loads(unicode(output['stdout'], errors='replace'))
+        results = json.loads(unicode_output)
     except ValueError as exc:
-        raise errors.SystemInfoNotJson(exc)
+        try:
+            clean_output = get_json(unicode_output)
+            results = json.loads(clean_output)
+        except ValueError as exc:
+            raise errors.SystemInfoNotJson(exc)
     return results
 
 
@@ -119,3 +126,21 @@ def remove_remote(ssh_client):
     command = "cd /tmp && %s" % remove
     output = ssh_client.remote_execute(command)
     return output
+
+
+def get_json(data):
+    """Find the JSON string in data and return a string.
+
+    :param data: :string:
+    :returns: string -- JSON string striped of non-JSON data
+    :raises: SystemInfoMissingJson
+
+        SystemInfoMissingJson if `ohai` does not return any JSON.
+    """
+    try:
+        first = data.index('{')
+        last = data.rindex('}')
+        return data[first:last + 1]
+    except ValueError as e:
+        context = {"ValueError": "%s" % e}
+        raise errors.SystemInfoMissingJson(context)
