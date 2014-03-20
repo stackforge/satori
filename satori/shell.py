@@ -201,13 +201,14 @@ def parse_args(argv):
 
     username, url = netloc_parser(config.netloc)
     config.netloc = url
+
+    if (config.host_key or config.username) and not config.system_info:
+        config.system_info = 'ohai-solo'
+
     if username:
         config.host_username = username
     else:
         config.host_username = 'root'
-
-    if (config.host_key or config.host_username) and not config.system_info:
-        config.system_info = 'ohai-solo'
 
     return config
 
