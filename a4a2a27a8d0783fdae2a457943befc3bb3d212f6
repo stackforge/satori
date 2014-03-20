@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: BK Box <bk@theboxes.org>
+Code-Review+2: BK Box <bk@theboxes.org>
+Submitted-by: Jenkins
+Submitted-at: Thu, 20 Mar 2014 02:07:21 +0000
+Reviewed-on: https://review.openstack.org/81650
+Project: stackforge/satori
+Branch: refs/heads/master
