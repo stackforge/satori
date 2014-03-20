@@ -38,10 +38,19 @@ Run WITHOUT OpenStack credentials::
     Host not found
 
 Deeper discovery is available if the network location (IP or hostname) is
-hosted on an OpenStack cloud tenant that Satori can access. 
+hosted on an OpenStack cloud tenant that Satori can access.
 
 Cloud settings can be passed in on the command line or via `OpenStack tenant environment
 variables`_.
+
+
+Run LOCALLY
+
+   $ pip install satori
+
+   $ satori localhost --system-info=ohai-solo
+   # Installs and runs ohai-solo
+
 
 Run WITH OpenStack credentials::
 
