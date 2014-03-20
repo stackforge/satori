@@ -3,7 +3,7 @@ Jinja2
 # python3 branch of paramiko
 https://github.com/paramiko/paramiko/archive/python3.zip#egg=paramiko-1.13.0
 pbr>=0.5.21,<1.0
-python-novaclient>=2.6.0.1
+python-novaclient>=2.15.0
 # pythonwhois with python 3.3 readiness patch
 -e git://github.com/ziadsawalha/python-whois.git@17aa17c1c71805df1cb7fa053fe90b6dc9ba6d4b#egg=pythonwhois
 six==1.5.2
