@@ -42,7 +42,11 @@ def resolve_hostname(host):
     hostname = parsed.netloc or parsed.path
 
     # socket.gaierror is not trapped here
-    address = socket.gethostbyname(hostname)
+    try:
+        address = socket.gethostbyname(hostname)
+    except socket.gaierror:
+        error = "`%s` is an invalid domain." % hostname
+        raise errors.SatoriInvalidDomain(error)
     return address
 
 
@@ -53,8 +57,12 @@ def get_registered_domain(hostname):
 
 def domain_info(domain):
     """Get as much information as possible for a given domain name."""
-    domain = get_registered_domain(domain)
-    result = pythonwhois.get_whois(domain)
+    registered_domain = get_registered_domain(domain)
+    if utils.is_valid_ip_address(domain) or registered_domain == '':
+        error = "`%s` is an invalid domain." % domain
+        raise errors.SatoriInvalidDomain(error)
+
+    result = pythonwhois.get_whois(registered_domain)
     registrar = []
     if 'registrar' in result and len(result['registrar']) > 0:
         registrar = result['registrar'][0]
@@ -72,7 +80,7 @@ def domain_info(domain):
                 days_until_expires = (utils.parse_time_string(expires) -
                                       datetime.datetime.now()).days
     return {
-        'name': domain,
+        'name': registered_domain,
         'whois': result['raw'],
         'registrar': registrar,
         'nameservers': nameservers,
