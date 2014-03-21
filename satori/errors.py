@@ -26,6 +26,11 @@ class SatoriInvalidNetloc(SatoriException):
     """Netloc that cannot be parsed by `urlparse`."""
 
 
+class SatoriInvalidDomain(SatoriException):
+
+    """Invalid Domain provided."""
+
+
 class SatoriShellException(SatoriException):
 
     """Invalid shell parameters."""
