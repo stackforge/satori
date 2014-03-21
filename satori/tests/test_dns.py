@@ -12,7 +12,6 @@
 #
 """Satori DNS Discovery."""
 
-import datetime
 import socket
 import unittest
 
@@ -264,6 +263,18 @@ class TestDNS(utils.TestCase):
         self.mock_get_whois_raw.return_value = small_whois
         data = dns.domain_info(self.domain)
         self.assertIsNone(data['expiration_date'])
+
+    def test_domain_info_raises_invalid_domain_error(self):
+        ip_whois = ["""
+        Home net HOME-NET-192-168 (NET-192-0-0-0-1)
+        Home Inc. HOME-NET-192-168-0 (NET-192-168-0-0-1)
+        """]
+        self.mock_get_whois_raw.return_value = ip_whois
+        self.assertRaises(
+            errors.SatoriInvalidDomain,
+            dns.domain_info,
+            "192.168.0.1"
+        )
 
 if __name__ == "__main__":
     unittest.main()
