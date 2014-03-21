@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Samuel Stavinoha <samuel.stavinoha@rackspace.com>
+Code-Review+2: Samuel Stavinoha <samuel.stavinoha@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 21 Mar 2014 17:48:04 +0000
+Reviewed-on: https://review.openstack.org/81912
+Project: stackforge/satori
+Branch: refs/heads/master
