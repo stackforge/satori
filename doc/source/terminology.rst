@@ -7,6 +7,8 @@ Opinions
 
 Opinions are being discussed at https://wiki.openstack.org/wiki/Satori/OpinionsProposal.
 
+.. _terminology_control_plane:
+
 Control Plane Discovery
 =======================
 
