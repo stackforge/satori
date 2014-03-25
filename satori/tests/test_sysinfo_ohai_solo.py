@@ -28,9 +28,10 @@ class TestOhaiSolo(utils.TestCase):
     @mock.patch.object(ohai_solo, 'install_remote')
     def test_connect_and_run(self, mock_install, mock_sysinfo, mock_bash):
         address = "192.0.2.2"
-        config = mock.MagicMock()
-        config.host_key = "foo"
-        config.host_username = "bar"
+        config = {
+            'host_key': 'foo',
+            'host_username': 'bar',
+        }
         mock_sysinfo.return_value = {}
         result = ohai_solo.get_systeminfo(address, config)
         self.assertTrue(result is mock_sysinfo.return_value)
