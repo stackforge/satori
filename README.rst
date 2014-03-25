@@ -24,13 +24,21 @@ Configuration discovery output could be used for:
 Getting Started
 ===============
 
-Run WITHOUT OpenStack credentials::
+Run discovery on the local system::
 
    $ pip install satori
 
-   $ satori www.foo.com
+   $ satori localhost --system-info=ohai-solo -F json
+   # Installs and runs ohai-solo, outputs the data as JSON
+
+
+Run against a URL with OpenStack credentials::
+
+   $ pip install satori
+
+   $ satori https://www.foo.com
     Address:
-        www.foo.com resolves to IPv4 address 4.4.4.4
+        www.foo.com resolves to IPv4 address 192.0.2.24
     Domain: foo.com
         Registrar: TUCOWS, INC.
     Nameservers: NS1.DIGIMEDIA.COM, NS2.DIGIMEDIA.COM
@@ -38,14 +46,14 @@ Run WITHOUT OpenStack credentials::
     Host not found
 
 Deeper discovery is available if the network location (IP or hostname) is
-hosted on an OpenStack cloud tenant that Satori can access. 
+hosted on an OpenStack cloud tenant that Satori can access.
 
 Cloud settings can be passed in on the command line or via `OpenStack tenant environment
 variables`_.
 
-Run WITH OpenStack credentials::
+Run with OpenStack credentials::
 
-   $ satori foo.com --os-username yourname --os-password yadayadayada --os-tenant-name myproject --os-auth-url http://...
+   $ satori 192.0.2.24 --os-username yourname --os-password yadayadayada --os-tenant-name myproject --os-auth-url http://...
 
 Or::
 
@@ -57,17 +65,9 @@ Or::
 
 Notice the discovery result now contains a ``Host`` section::
 
-   $ satori www.foo.com
-   Domain: foo.com
-     Registered at TUCOWS DOMAINS INC.
-     Expires in 475 days.
-     Name servers:
-         DNS1.STABLETRANSIT.COM
-         DNS2.STABLETRANSIT.COM
-   Address:
-     www.foo.com resolves to IPv4 address 4.4.4.4
+   $ satori 192.0.2.24 --os-username yourname --os-password yadayadayada --os-tenant-name myproject --os-auth-url http://...
    Host:
-     4.4.4.4 (www.foo.com) is hosted on a Nova Instance
+     192.0.2.24 is hosted on a Nova Instance
      Instance Information:
          URI: https://nova.api.somecloud.com/v2/111222/servers/d9119040-f767-414
               1-95a4-d4dbf452363a
@@ -76,7 +76,7 @@ Notice the discovery result now contains a ``Host`` section::
      ip-addresses:
          public:
              ::ffff:404:404
-             4.4.4.4
+             192.0.2.24
          private:
              10.1.1.156
      System Information:
@@ -117,22 +117,16 @@ Unit tests can be ran simply by running::
    $ tox -e py27
 
 
-Running a test coverage report:
+Checking test coverage::
 
-   # cleanup previous runs
-   $ rm -rf cover && rm -rf covhtml && rm .coverage
+   # Run tests with coverage
+   $ tox -ecover
 
-   # Run tests and generate the report
-   $ tox -ecover && coverage html -d covhtml -i
+   # generate the report
+   $ coverage html -d covhtml -i
 
    # open it in a broweser
    $ open covhtml/index.html
-
-Checking test coverage::
-
-  $ tox -ecover
-  $ coverage html -d covhtml -i
-  $ open covhtml/index.html  # opens the report in a browser
 
 
 Links
