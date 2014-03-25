@@ -43,7 +43,7 @@ def netloc_parser(data):
     """
     if data and '@' in data:
         first_at = data.index('@')
-        return (data[0:first_at] or None), data[first_at+1:] or None
+        return (data[0:first_at] or None), data[first_at + 1:] or None
     else:
         return None, data or None
 
@@ -210,7 +210,7 @@ def parse_args(argv):
     else:
         config.host_username = 'root'
 
-    return config
+    return vars(config)
 
 
 def main(argv=None):
@@ -218,17 +218,18 @@ def main(argv=None):
     config = parse_args(argv)
     common_logging.init_logging(config)
 
-    if not (config.format == 'json' or check_format(config.format or "text")):
+    if not (config['format'] == 'json' or
+            check_format(config['format'] or "text")):
         sys.exit("Output format file (%s) not found or accessible. Try "
                  "specifying raw JSON format using `--format json`" %
-                 get_template_path(config.format))
+                 get_template_path(config['format']))
 
     try:
-        results = discovery.run(config.netloc, config, interactive=True)
-        print(format_output(config.netloc, results,
-                            template_name=config.format))
+        results = discovery.run(config['netloc'], config, interactive=True)
+        print(format_output(config['netloc'], results,
+                            template_name=config['format']))
     except Exception as exc:  # pylint: disable=W0703
-        if config.debug:
+        if config['debug']:
             LOG.exception(exc)
         return str(exc)
 

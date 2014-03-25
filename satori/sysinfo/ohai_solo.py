@@ -45,8 +45,8 @@ def get_systeminfo(ipaddress, config, interactive=False):
         client.port = 0
 
     else:
-        client = bash.RemoteShell(ipaddress, username=config.host_username,
-                                  private_key=config.host_key,
+        client = bash.RemoteShell(ipaddress, username=config['host_username'],
+                                  private_key=config['host_key'],
                                   interactive=interactive)
 
     install_remote(client)
