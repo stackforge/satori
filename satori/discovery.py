@@ -53,7 +53,7 @@ def run(address, config, interactive=False):
     results['address'] = ipaddress
 
     results['host'] = host = {'type': 'Undetermined'}
-    if config.username is not None:
+    if config.get('username'):
         server = find_nova_host(ipaddress, config)
         if server:
             host['type'] = 'Nova instance'
@@ -62,8 +62,8 @@ def run(address, config, interactive=False):
             host['name'] = server.name
             host['id'] = server.id
             host['addresses'] = server.addresses
-    if config.system_info:
-        module_name = config.system_info.replace("-", "_")
+    if config.get('system_info'):
+        module_name = config['system_info'].replace("-", "_")
         if '.' not in module_name:
             module_name = 'satori.sysinfo.%s' % module_name
         system_info_module = utils.import_object(module_name)
@@ -75,11 +75,11 @@ def run(address, config, interactive=False):
 
 def find_nova_host(address, config):
     """See if a nova instance has the supplied address."""
-    nova = client.Client(config.username,
-                         config.password,
-                         config.tenant_id,
-                         config.authurl,
-                         region_name=config.region,
+    nova = client.Client(config['username'],
+                         config['password'],
+                         config['tenant_id'],
+                         config['authurl'],
+                         region_name=config['region'],
                          service_type="compute")
     for server in nova.servers.list():
         for network_addresses in six.itervalues(server.addresses):
