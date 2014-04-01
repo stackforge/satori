@@ -26,28 +26,33 @@ class TestLoggingSetup(utils.TestCase):
     """Logging Setup tests."""
 
     def test_logging_default_info(self):
-        config = mock.MagicMock(logconfig=None)
-        logging.init_logging(config)
-        self.assertEqual(stdlib_logging.getLogger().level,
-                         stdlib_logging.INFO)
+        config = {}
+        with mock.patch.dict(config, {'logconfig': None}):
+            logging.init_logging(config)
+            self.assertEqual(stdlib_logging.getLogger().level,
+                            stdlib_logging.INFO)
 
     def test_logging_debug_flag(self):
-        config = mock.MagicMock(logconfig=None, debug=True)
-        logging.init_logging(config)
-        self.assertEqual(stdlib_logging.getLogger().level,
-                         stdlib_logging.DEBUG)
+        #config = mock.MagicMock(logconfig=None, debug=True)
+        config = {}
+        with mock.patch.dict(config, {'logconfig': None, 'debug': True}):
+            logging.init_logging(config)
+            self.assertEqual(stdlib_logging.getLogger().level,
+                            stdlib_logging.DEBUG)
 
     def test_logging_verbose_flag(self):
-        config = mock.MagicMock(logconfig=None, verbose=True)
-        logging.init_logging(config)
-        self.assertEqual(stdlib_logging.getLogger().level,
-                         stdlib_logging.DEBUG)
+        config = {}
+        with mock.patch.dict(config, {'logconfig': None, 'verbose': True}):
+            logging.init_logging(config)
+            self.assertEqual(stdlib_logging.getLogger().level,
+                            stdlib_logging.DEBUG)
 
     def test_logging_quiet_flag(self):
-        config = mock.MagicMock(logconfig=None, quiet=True)
-        logging.init_logging(config)
-        self.assertEqual(stdlib_logging.getLogger().level,
-                         stdlib_logging.WARN)
+        config = {}
+        with mock.patch.dict(config, {'logconfig': None, 'quiet': True}):
+            logging.init_logging(config)
+            self.assertEqual(stdlib_logging.getLogger().level,
+                            stdlib_logging.WARN)
 
 
 if __name__ == "__main__":
