@@ -54,8 +54,8 @@ def init_logging(config, default_config=None):
     :param config: object with configuration namespace (ex. argparse parser)
     :keyword default_config: path to a python logging configuration file
     """
-    if config.logconfig and os.path.isfile(config.logconfig):
-        logging.config.fileConfig(config.logconfig,
+    if config['logconfig'] and os.path.isfile(config['logconfig']):
+        logging.config.fileConfig(config['logconfig'],
                                   disable_existing_loggers=False)
     elif default_config and os.path.isfile(default_config):
         logging.config.fileConfig(default_config,
@@ -83,11 +83,11 @@ def log_level(config):
 
     :param config: object with configuration namespace (ex. argparse parser)
     """
-    if config.debug is True:
+    if config['debug'] is True:
         return logging.DEBUG
-    elif config.verbose is True:
+    elif config['verbose'] is True:
         return logging.DEBUG
-    elif config.quiet is True:
+    elif config['quiet'] is True:
         return logging.WARNING
     else:
         return logging.INFO
@@ -105,13 +105,13 @@ def get_debug_formatter(config):
 
     :param config: object with configuration namespace (ex. argparse parser)
     """
-    if config.debug is True:
+    if config['debug'] is True:
         return DebugFormatter('%(pathname)s:%(lineno)d: %(levelname)-8s '
                               '%(message)s')
-    elif config.verbose is True:
+    elif config['verbose'] is True:
         return logging.Formatter(
             '%(name)-30s: %(levelname)-8s %(message)s')
-    elif config.quiet is True:
+    elif config['quiet'] is True:
         return logging.Formatter('%(message)s')
     else:
         return logging.Formatter('%(message)s')
