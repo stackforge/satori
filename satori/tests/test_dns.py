@@ -276,5 +276,19 @@ class TestDNS(utils.TestCase):
             "192.168.0.1"
         )
 
+    def test_ip_info_raises_invalid_ip_error(self):
+        self.assertRaises(
+            errors.SatoriInvalidIP,
+            dns.ip_info,
+            "example.com"
+        )
+
+    def test_ip_info_raises_inavalid_ip_error_bad_ip(self):
+        self.assertRaises(
+            errors.SatoriInvalidIP,
+            dns.ip_info,
+            "1.2.3"
+        )
+
 if __name__ == "__main__":
     unittest.main()
