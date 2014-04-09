@@ -31,6 +31,11 @@ class SatoriInvalidDomain(SatoriException):
     """Invalid Domain provided."""
 
 
+class SatoriInvalidIP(SatoriException):
+
+    """Invalid IP provided."""
+
+
 class SatoriShellException(SatoriException):
 
     """Invalid shell parameters."""

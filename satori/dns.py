@@ -55,6 +55,19 @@ def get_registered_domain(hostname):
     return tldextract.extract(hostname).registered_domain
 
 
+def ip_info(ip):
+    """Get as much information as possible for a given ip address."""
+    if not utils.is_valid_ip_address(ip):
+        error = "`%s` is an invalid IP address." % ip
+        raise errors.SatoriInvalidIP(error)
+
+    result = pythonwhois.get_whois(ip)
+
+    return {
+        'whois': result['raw']
+    }
+
+
 def domain_info(domain):
     """Get as much information as possible for a given domain name."""
     registered_domain = get_registered_domain(domain)
@@ -87,3 +100,11 @@ def domain_info(domain):
         'days_until_expires': days_until_expires,
         'expiration_date': expires,
     }
+
+
+def netloc_info(netloc):
+    """Determine if netloc is an IP or domain name."""
+    if utils.is_valid_ip_address(netloc):
+        ip_info(netloc)
+    else:
+        domain_info(netloc)
