@@ -136,13 +136,13 @@ class TestDNS(utils.TestCase):
     def test_resolve_int_raises_invalid_netloc_error(self):
         self.assertRaises(
             errors.SatoriInvalidNetloc,
-            dns.resolve_hostname,
+            dns.parse_target_hostname,
             100)
 
     def test_resolve_none_raises_invalid_netloc_error(self):
         self.assertRaises(
             errors.SatoriInvalidNetloc,
-            dns.resolve_hostname,
+            dns.parse_target_hostname,
             None)
 
     def test_registered_domain_subdomain_removed(self):
