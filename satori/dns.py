@@ -9,7 +9,7 @@
 #   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #   License for the specific language governing permissions and limitations
 #   under the License.
-#
+
 """Satori DNS Discovery."""
 
 import datetime
@@ -27,21 +27,24 @@ from satori import utils
 LOG = logging.getLogger(__name__)
 
 
-def resolve_hostname(host):
-    """Get IP address of hostname or URL."""
+def parse_target_hostname(target):
+    """Get IP address or FQDN of a target which could be a URL or address."""
+    if not target:
+        raise errors.SatoriInvalidNetloc("Target must be supplied.")
     try:
-        if not host:
-            raise AttributeError("Host must be supplied.")
-        parsed = urlparse.urlparse(host)
+        parsed = urlparse.urlparse(target)
     except AttributeError as err:
-        error = "Hostname `%s` is unparseable. Error: %s" % (host, err)
+        error = "Target `%s` is unparseable. Error: %s" % (target, err)
         LOG.exception(error)
         raise errors.SatoriInvalidNetloc(error)
 
     # Domain names and IP are in netloc when parsed with a protocol
     # they will be in path if parsed without a protocol
-    hostname = parsed.netloc or parsed.path
+    return parsed.netloc or parsed.path
 
+
+def resolve_hostname(hostname):
+    """Get IP address of hostname."""
     try:
         address = socket.gethostbyname(hostname)
     except socket.gaierror:
@@ -55,13 +58,13 @@ def get_registered_domain(hostname):
     return tldextract.extract(hostname).registered_domain
 
 
-def ip_info(ip):
+def ip_info(ip_address):
     """Get as much information as possible for a given ip address."""
-    if not utils.is_valid_ip_address(ip):
-        error = "`%s` is an invalid IP address." % ip
+    if not utils.is_valid_ip_address(ip_address):
+        error = "`%s` is an invalid IP address." % ip_address
         raise errors.SatoriInvalidIP(error)
 
-    result = pythonwhois.get_whois(ip)
+    result = pythonwhois.get_whois(ip_address)
 
     return {
         'whois': result['raw']
