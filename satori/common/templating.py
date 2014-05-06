@@ -76,12 +76,12 @@ def preserve_linefeeds(value):
     return value.replace("\n", "\\n").replace("\r", "")
 
 
-def get_jinja_environment(template, extra_globals=None):
+def get_jinja_environment(template, extra_globals=None, **env_vars):
     """Return a sandboxed jinja environment."""
     template_map = {'template': template}
     env = sandbox.ImmutableSandboxedEnvironment(
         loader=jinja2.DictLoader(template_map),
-        bytecode_cache=CompilerCache())
+        bytecode_cache=CompilerCache(), **env_vars)
     env.filters['prepend'] = do_prepend
     env.filters['preserve'] = preserve_linefeeds
     env.globals['json'] = json
@@ -90,14 +90,17 @@ def get_jinja_environment(template, extra_globals=None):
     return env
 
 
-def parse(template, extra_globals=None, **kwargs):
+def parse(template, extra_globals=None, env_vars=None, **kwargs):
     """Parse template.
 
     :param template: the template contents as a string
     :param extra_globals: additional globals to include
     :param kwargs: extra arguments are passed to the renderer
     """
-    env = get_jinja_environment(template, extra_globals=extra_globals)
+    if env_vars is None:
+        env_vars = {}
+    env = get_jinja_environment(template, extra_globals=extra_globals,
+                                **env_vars)
 
     minimum_kwargs = {
         'data': {},

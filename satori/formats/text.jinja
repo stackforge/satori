@@ -1,20 +1,46 @@
-{% if data['address'] != target %}Address:
-    {{ target }} resolves to IPv4 address {{ data.address }}
-{% endif %}{% if data['domain'] %}Domain: {{ data.domain.name }}
-    Registrar: {{ data.domain.registrar }}{% if data.domain.nameservers %}
-    Nameservers: {% for nameserver in data.domain.nameservers %}{{nameserver}}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% endif %}{% if data['domain'] and data.domain.days_until_expires %}    Expires: {{ data.domain.days_until_expires }} days{% endif %}{% if data['host'] and data.host.type == 'Nova instance' %}Host:
-    {{ data.address }} ({{ target }}) is hosted on a {{ data.host.type }}
-    Instance Information:
-        URI: {{ data.host.uri }}
-        Name: {{ data.host.name }}
-        ID: {{ data.host.id }}
-    ip-addresses:{% for name, addresses in data.host.addresses.items() %}
-        {{ name }}:{% for address in addresses %}
-            {{ address.addr }}{% endfor %}{% endfor %}
-{% elif data['address'] %}Host:
-    ip-address: {{ data.address }}
-{% else %}Host not found
-{% endif %}{% if data['host'] and data.host.system_info %}Packages:
-{% for name, package in data.host.system_info.packages.items() %}      {{ name }}:  {{ package.version }}
-{% endfor %}
+{% set found = data['found'] | default({}) %}
+{% set resources = data['resources'] | default({'n/a': {}}) %}
+{% set address = found['ip-address'] %}
+{% set hostkey = found['host-key'] | default('n/a') %}
+{% set domainkey = found['domain-key'] | default('n/a') %}
+{% set server = resources[hostkey] | default(False) %}
+{% set domain = resources[domainkey] | default(False) %}
+
+{% if found['ip-address'] != target %}Address:
+    {{ target }} resolves to IPv4 address {{ found['ip-address'] }}
+{%- endif %}
+
+{% if domain %}Domain: {{ domain.params.name }}
+    Registrar: {{ domain.params.registrar }}
+{% if domain.params.nameservers %}
+    Nameservers: {% for nameserver in domain.params.nameservers %}{{nameserver}}{% if not loop.last %}, {% endif %}{% endfor %}
+
 {% endif %}
+{% if domain.params.days_until_expires %}
+    Expires: {{ domain.params.days_until_expires }} days
+{% endif %}
+{%- endif %}
+{% if server and server.type == 'OS::Nova::Instance' %}
+Host:
+    {{ found['ip-address'] }} ({{ target }}) is hosted on a Nova instance
+    Instance Information:
+        URI: {{ server.params.uri }}
+        Name: {{ server.params.name }}
+        ID: {{ server.params.id }}
+    ip-addresses:
+{% for name, addresses in server.params.addresses.items() %}
+        {{ name }}:
+{% for address in addresses %}
+            {{ address.addr }}
+{% endfor %}
+{% endfor %}
+{% elif found['ip-address'] %}
+Host:
+    ip-address: {{ found['ip-address'] }}
+{% else %}Host not found
+{% endif %}
+
+{% if server and server.params.system_info %}
+Packages:
+{% for name, package in server.params.system_info.packages.items() %}      {{ name }}:  {{ package.version }}{% endfor %}
+{%- endif %}
