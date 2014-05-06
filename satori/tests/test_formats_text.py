@@ -29,20 +29,25 @@ class TestTextTemplate(unittest.TestCase):
 
     def test_no_data(self):
         """Handles response with no host."""
-        result = templating.parse(self.template, data={})
+        env_vars = dict(lstrip_blocks=True, trim_blocks=True)
+        result = templating.parse(self.template, data={}, env_vars=env_vars)
         self.assertEqual(result.strip('\n'), 'Host not found')
 
     def test_target_is_ip(self):
         """Handles response when host is just the supplied address."""
+        env_vars = dict(lstrip_blocks=True, trim_blocks=True)
         result = templating.parse(self.template, target='127.0.0.1',
-                                  data={'address': '127.0.0.1'})
+                                  data={'found': {'ip-address': '127.0.0.1'}},
+                                  env_vars=env_vars)
         self.assertEqual(result.strip('\n'),
                          'Host:\n    ip-address: 127.0.0.1')
 
     def test_host_not_server(self):
         """Handles response when host is not a nova instance."""
+        env_vars = dict(lstrip_blocks=True, trim_blocks=True)
         result = templating.parse(self.template, target='localhost',
-                                  data={'address': '127.0.0.1'})
+                                  data={'found': {'ip-address': '127.0.0.1'}},
+                                  env_vars=env_vars)
         self.assertEqual(result.strip('\n'),
                          'Address:\n    localhost resolves to IPv4 address '
                          '127.0.0.1\nHost:\n    ip-address: 127.0.0.1')
@@ -50,20 +55,44 @@ class TestTextTemplate(unittest.TestCase):
     def test_host_is_nova_instance(self):
         """Handles response when host is a nova instance."""
         data = {
-            'address': '10.1.1.45',
-            'host': {
-                'type': 'Nova instance',
-                'uri': 'https://servers/path',
-                'id': '1000B',
-                'name': 'x',
-                'addresses': {
-                    'public': [{'type': 'ipv4', 'addr': '10.1.1.45'}]
+            'found': {
+                'ip-address': '10.1.1.45',
+                'hostname': 'x',
+                'host-key': 'https://servers/path'
+            },
+            'target': 'instance.nova.local',
+            'resources': {
+                'https://servers/path': {
+                    'type': 'OS::Nova::Instance',
+                    'data': {
+                        'uri': 'https://servers/path',
+                        'id': '1000B',
+                        'name': 'x',
+                        'addresses': {
+                            'public': [{'type': 'ipv4', 'addr': '10.1.1.45'}]
+                        },
+                        'system_info': {
+                            'connections': {
+                                '192.168.2.100': [],
+                                '192.168.2.101': [433],
+                                '192.168.2.102': [8080, 8081]
+                            },
+                            'remote_services': [
+                                {
+                                    'ip': '0.0.0.0',
+                                    'process': 'nginx',
+                                    'port': 80
+                                }
+                            ]
+                        }
+                    }
                 }
             }
         }
+        env_vars = dict(lstrip_blocks=True, trim_blocks=True)
         result = templating.parse(self.template,
                                   target='instance.nova.local',
-                                  data=data)
+                                  data=data, env_vars=env_vars)
         expected = """\
 Address:
     instance.nova.local resolves to IPv4 address 10.1.1.45
@@ -75,7 +104,83 @@ Host:
         ID: 1000B
     ip-addresses:
         public:
-            10.1.1.45"""
+            10.1.1.45
+    Listening Services:
+        0.0.0.0:80  nginx
+    Talking to:
+        192.168.2.102 on 8080, 8081
+        192.168.2.101 on 433
+        192.168.2.100"""
+        self.assertEqual(result.strip('\n'), expected)
+
+    def test_host_has_no_data(self):
+        """Handles response when host is a nova instance."""
+        data = {
+            'found': {
+                'ip-address': '10.1.1.45',
+                'hostname': 'x',
+                'host-key': 'https://servers/path'
+            },
+            'target': 'instance.nova.local',
+            'resources': {
+                'https://servers/path': {
+                    'type': 'OS::Nova::Instance'
+                }
+            }
+        }
+        env_vars = dict(lstrip_blocks=True, trim_blocks=True)
+        result = templating.parse(self.template,
+                                  target='instance.nova.local',
+                                  data=data, env_vars=env_vars)
+        expected = """\
+Address:
+    instance.nova.local resolves to IPv4 address 10.1.1.45
+Host:
+    10.1.1.45 (instance.nova.local) is hosted on a Nova instance"""
+        self.assertEqual(result.strip('\n'), expected)
+
+    def test_host_data_missing_items(self):
+        """Handles response when host is a nova instance."""
+        data = {
+            'found': {
+                'ip-address': '10.1.1.45',
+                'hostname': 'x',
+                'host-key': 'https://servers/path'
+            },
+            'target': 'instance.nova.local',
+            'resources': {
+                'https://servers/path': {
+                    'type': 'OS::Nova::Instance',
+                    'data': {
+                        'id': '1000B',
+                        'system_info': {
+                            'remote_services': [
+                                {
+                                    'ip': '0.0.0.0',
+                                    'process': 'nginx',
+                                    'port': 80
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+        env_vars = dict(lstrip_blocks=True, trim_blocks=True)
+        result = templating.parse(self.template,
+                                  target='instance.nova.local',
+                                  data=data, env_vars=env_vars)
+        expected = """\
+Address:
+    instance.nova.local resolves to IPv4 address 10.1.1.45
+Host:
+    10.1.1.45 (instance.nova.local) is hosted on a Nova instance
+    Instance Information:
+        URI: n/a
+        Name: n/a
+        ID: 1000B
+    Listening Services:
+        0.0.0.0:80  nginx"""
         self.assertEqual(result.strip('\n'), expected)
 
 
