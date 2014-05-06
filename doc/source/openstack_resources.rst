@@ -31,7 +31,7 @@ Alternatively, the credentials can be passed on the command line:
     --os-username yourname \
     --os-password yadayadayada \
     --os-tenant-name myproject \
-    --os-auth-url http://... 
+    --os-auth-url http://...
 
 
 Discovered Host
@@ -67,6 +67,12 @@ control plane discovery was possible using the OpenStack credentials.
              192.0.2.10
          private:
              10.1.1.156
+    Listening Services:
+        0.0.0.0:6082  varnishd
+        127.0.0.1:8080  apache2
+        127.0.0.1:3306  mysqld
+    Talking to:
+        10.1.1.71 on 27017
 
 .. _nova: https://github.com/openstack/python-novaclient
 .. _OpenStack Nova conventions: https://github.com/openstack/python-novaclient/blob/master/README.rst#id1

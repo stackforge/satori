@@ -17,7 +17,6 @@
 
 Accept a network location, run through the discovery process and report the
 findings back to the user.
-
 """
 
 from __future__ import print_function
@@ -225,9 +224,12 @@ def main(argv=None):
                  get_template_path(config['format']))
 
     try:
-        results = discovery.run(config['netloc'], config, interactive=True)
+        results, errors = discovery.run(config['netloc'], config,
+                                        interactive=True)
         print(format_output(config['netloc'], results,
                             template_name=config['format']))
+        if errors:
+            sys.stderr.write(format_errors(errors, config))
     except Exception as exc:  # pylint: disable=W0703
         if config['debug']:
             LOG.exception(exc)
@@ -263,8 +265,20 @@ def format_output(discovered_target, results, template_name="text"):
         return(json.dumps(results, indent=2))
     else:
         template = get_template(template_name)
+        env_vars = dict(lstrip_blocks=True, trim_blocks=True)
         return templating.parse(template, target=discovered_target,
-                                data=results).strip('\n')
+                                data=results, env_vars=env_vars).strip('\n')
+
+
+def format_errors(errors, config):
+    """Format errors for output to console."""
+    if config['debug']:
+        return str(errors)
+    else:
+        formatted = {}
+        for key, error in errors.items():
+            formatted[key] = error['message']
+        return str(formatted)
 
 
 if __name__ == "__main__":

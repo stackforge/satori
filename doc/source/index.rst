@@ -10,6 +10,7 @@ Satori is a configuration discovery tool for OpenStack and OpenStack tenant host
    contributing
    releases
    terminology
+   schema
    satori
 
 
@@ -51,8 +52,7 @@ Use Satori
    Host:
      4.4.4.4 (www.foo.com) is hosted on a Nova Instance
      Instance Information:
-         URI: https://nova.api.somecloud.com/v2/111222/servers/d9119040-f767-414
-              1-95a4-d4dbf452363a
+         URI: https://nova.api.somecloud.com/v2/111222/servers/d9119040
          Name: sampleserver01.foo.com
          ID: d9119040-f767-4141-95a4-d4dbf452363a
      ip-addresses:
@@ -61,6 +61,12 @@ Use Satori
              4.4.4.4
          private:
              10.1.1.156
+    Listening Services:
+        0.0.0.0:6082  varnishd
+        127.0.0.1:8080  apache2
+        127.0.0.1:3306  mysqld
+    Talking to:
+        10.1.1.71 on 27017
 
 
 Links
