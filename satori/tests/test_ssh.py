@@ -550,54 +550,6 @@ class TestTestConnection(SSHTestBase):
             'ssh://%s@%s:%d is up.', 'test-user', self.host, 22)
 
 
-class TestGetProxySocket(SSHTestBase):
-
-    def setUp(self):
-        super(TestGetProxySocket, self).setUp()
-        self.proxy_patcher = mock.patch.object(paramiko, "ProxyCommand")
-        self.proxy_patcher.start()
-        self.proxy = ssh.SSH('proxy.address', username='proxy-user')
-        self.client = ssh.SSH('123.546.789.0', username='client-user')
-        self.mutable = [True]
-
-    def tearDown(self):
-        self.proxy_patcher.stop()
-        super(TestGetProxySocket, self).tearDown()
-
-    def test_get_proxy_socket(self):
-        self.client._get_proxy_socket(self.proxy)
-        paramiko.ProxyCommand.assert_called_once_with(
-            'ssh -o ConnectTimeout=20 '
-            ' -A proxy-user@proxy.address nc 123.546.789.0 22')
-
-    def test_get_proxy_socket_private_key(self):
-        self.proxy.private_key = self.rsakey
-        self.client._get_proxy_socket(self.proxy)
-        self.assertTrue(paramiko.ProxyCommand.called)
-
-    def tempfile_spotted(self):
-        home = os.path.expanduser('~/')
-        filist = [k for k in os.listdir(home)
-                  if k.startswith(ssh.TEMPFILE_PREFIX)]
-        while all(self.mutable):
-            new = [k for k in os.listdir(home)
-                   if k.startswith(ssh.TEMPFILE_PREFIX)]
-            if len(new) > len(filist):
-                return set(new).difference(set(filist)).pop()
-        return False
-
-    def test_get_proxy_file_unseen(self):
-
-        self.proxy.key_filename = "~/not/a/real/path"
-        expanded_path = os.path.expanduser(self.proxy.key_filename)
-        self.client._get_proxy_socket(self.proxy)
-
-        paramiko.ProxyCommand.assert_called_once_with(
-            'ssh -o ConnectTimeout=20 '
-            ' -A proxy-user@proxy.address -i %s '
-            'nc 123.546.789.0 22' % expanded_path)
-
-
 class TestRemoteExecute(SSHTestBase):
 
     def setUp(self):
@@ -685,160 +637,29 @@ class TestRemoteExecute(SSHTestBase):
         self.assertEqual(expected_result, self.client.platform_info)
 
 
-class TestRemoteExecuteWithProxy(SSHTestBase):
-
-    def setUp(self):
-        super(TestRemoteExecuteWithProxy, self).setUp()
-        self.proxy_patcher = mock.patch.object(paramiko, "ProxyCommand")
-        self.proxy_patcher.start()
-        proxy = ssh.SSH('proxy-address', username='proxy-user')
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=proxy)
-        self.client._handle_tty_required = mock.Mock(return_value=False)
-        self.client._handle_password_prompt = mock.Mock(return_value=False)
-
-        self.mock_chan = mock.MagicMock()
-        mock_transport = mock.MagicMock()
-        mock_transport.open_session.return_value = self.mock_chan
-        self.client.get_transport = mock.MagicMock(
-            return_value=mock_transport)
-
-        self.mock_chan.exec_command = mock.MagicMock()
-        self.mock_chan.makefile.side_effect = self.mkfile
-        self.mock_chan.makefile_stderr.side_effect = (
-            lambda x: self.mkfile(x, err=True))
-
-        self.example_command = 'echo hello'
-        self.example_output = 'hello'
-
-    def tearDown(self):
-        self.proxy_patcher.stop()
-        super(TestRemoteExecuteWithProxy, self).tearDown()
-
-    def mkfile(self, arg, err=False):
-        if arg == 'rb' and not err:
-            stdout = mock.MagicMock()
-            stdout.read.return_value = 'hello\n'
-            return stdout
-        if arg == 'wb' and not err:
-            stdin = mock.MagicMock()
-            stdin.read.return_value = ''
-            return stdin
-        if err is True:
-            stderr = mock.MagicMock()
-            stderr.read.return_value = ''
-            return stderr
-
-    def test_remote_execute_with_proxy(self):
-        commands = ['echo hello', 'uname -a', 'rev ~/.bash*']
-        for cmd in commands:
-            self.client.remote_execute(cmd)
-            self.mock_chan.exec_command.assert_called_with(cmd)
-
-
 class TestProxy(SSHTestBase):
 
     """self.client in this class is instantiated with a proxy."""
 
     def setUp(self):
         super(TestProxy, self).setUp()
-        self.proxy_patcher = mock.patch.object(paramiko, "ProxyCommand")
-        self.proxy_patcher.start()
-        self.proxy = ssh.SSH('proxy.address', username='proxy-user')
+        self.gateway = ssh.SSH('gateway.address', username='gateway-user')
 
     def tearDown(self):
-        self.proxy_patcher.stop()
         super(TestProxy, self).tearDown()
-
-    def test_test_connection(self):
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
-        self.assertTrue(self.client.test_connection())
-
-    def test_test_connection_valid_key(self):
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
-        self.client.private_key = self.dsakey
-        self.assertTrue(self.client.test_connection())
 
     def test_test_connection_fail_other(self):
         self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
+            '123.456.789.0', username='client-user', gateway=self.gateway)
         self.mock_connect.side_effect = Exception
         self.assertFalse(self.client.test_connection())
 
-    def test_connect_with_proxy_socket(self):
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
-        self.client.connect()
-        paramiko.ProxyCommand.assert_called_with(
-            'ssh -o ConnectTimeout=20 '
-            ' -A proxy-user@proxy.address nc 123.456.789.0 22')
-
-    def test_connect_with_proxy_socket_and_options(self):
-        options = {
-            'BatchMode': 'yes',
-            'CheckHostIP': 'yes',
-            'ChallengeResponseAuthentication': 'no',
-            'Ciphers': 'cast128-cbc,aes256-ctr',
-        }
-        self.proxy = ssh.SSH(
-            'proxy.address', username='proxy-user', options=options)
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
-        self.client.connect()
-        paramiko.ProxyCommand.assert_called_with(
-            'ssh -o ConnectTimeout=20 -o BatchMode=yes '
-            '-o ChallengeResponseAuthentication=no '
-            '-o CheckHostIP=yes -o Ciphers=cast128-cbc,aes256-ctr  '
-            '-A proxy-user@proxy.address nc 123.456.789.0 22')
-
-    def test_connect_with_proxy_socket_and_bool_options(self):
-        """Should create the same ProxyCommand call as bool_options."""
-        options = {
-            'BatchMode': True,
-            'CheckHostIP': True,
-            'ChallengeResponseAuthentication': False,
-            'Ciphers': 'cast128-cbc,aes256-ctr',
-        }
-        self.proxy = ssh.SSH(
-            'proxy.address', username='proxy-user', options=options)
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
-        self.client.connect()
-        paramiko.ProxyCommand.assert_called_with(
-            'ssh -o ConnectTimeout=20 -o BatchMode=yes '
-            '-o ChallengeResponseAuthentication=no '
-            '-o CheckHostIP=yes -o Ciphers=cast128-cbc,aes256-ctr  '
-            '-A proxy-user@proxy.address nc 123.456.789.0 22')
-
     def test_connect_with_proxy_no_host_raises(self):
-        proxy = {'this': 'is not a proxy'}
+        gateway = {'this': 'is not a gateway'}
         self.assertRaises(
             TypeError,
             ssh.SSH, ('123.456.789.0',),
-            username='client-user', proxy=proxy)
-
-    def test_connect_with_proxy_socket_private_key(self):
-        """Test when proxy inits with private key string.
-
-        Overrides self.client and self.proxy from setUp.
-        """
-        self.proxy.private_key = self.rsakey
-        self.client = ssh.SSH(
-            '123.456.789.0', username='client-user', proxy=self.proxy)
-        self.client.connect()
-        self.assertTrue(paramiko.ProxyCommand.called)
-        ident = ' -i '
-        begin = paramiko.ProxyCommand.call_args[0][0].index(ident)
-        end = paramiko.ProxyCommand.call_args[0][0].find(
-            ' ', begin + len(ident))
-        tempfilepath = (paramiko.ProxyCommand.
-                        call_args[0][0][begin + len(ident):end])
-        paramiko.ProxyCommand.assert_called_with(
-            'ssh -o ConnectTimeout=20 '
-            ' -A proxy-user@proxy.address '
-            '-i %s nc 123.456.789.0 22' % tempfilepath)
+            username='client-user', gateway=gateway)
 
 
 if __name__ == "__main__":

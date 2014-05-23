@@ -12,7 +12,7 @@
 
 """SSH Module for connecting to and automating remote commands.
 
-Supports proxying, as in `ssh -A`
+Supports proxying through an ssh tunnel ('gateway' keyword argument.)
 
 To control the behavior of the SSH client, use the specific connect_with_*
 calls. The .connect() call behaves like the ssh command and attempts a number
@@ -31,7 +31,6 @@ import getpass
 import logging
 import os
 import re
-import tempfile
 import time
 
 import paramiko
@@ -102,7 +101,7 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
     # pylint: disable=R0913
     def __init__(self, host, password=None, username="root",
                  private_key=None, key_filename=None, port=22,
-                 timeout=20, proxy=None, options=None, interactive=False):
+                 timeout=20, gateway=None, options=None, interactive=False):
         """Create an instance of the SSH class.
 
         :param str host:        The ip address or host name of the server
@@ -116,7 +115,7 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         :param port:            tcp/ip port to use (defaults to 22)
         :param float timeout:   an optional timeout (in seconds) for the
                                 TCP connection
-        :param socket proxy:    an existing SSH instance to use
+        :param socket gateway:    an existing SSH instance to use
                                 for proxying
         :param dict options:    A dictionary used to set ssh options
                                 (when proxying).
@@ -137,13 +136,13 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         self.timeout = timeout
         self._platform_info = None
         self.options = options or {}
-        self.proxy = proxy
+        self.gateway = gateway
         self.sock = None
         self.interactive = interactive
 
-        if self.proxy:
-            if not isinstance(self.proxy, SSH):
-                raise TypeError("'proxy' must be a satori.ssh.SSH instance. "
+        if self.gateway:
+            if not isinstance(self.gateway, SSH):
+                raise TypeError("'gateway' must be a satori.ssh.SSH instance. "
                                 "( instances of this type are returned by "
                                 "satori.ssh.connect() )")
 
@@ -224,12 +223,15 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         """Set up client and connect to target."""
         self.load_system_host_keys()
 
-        if self.proxy:
-            # lazy load
-            self.sock = self._get_proxy_socket(self.proxy)
-
         if self.options.get('StrictHostKeyChecking') in (False, "no"):
             self.set_missing_host_key_policy(AcceptMissingHostKey())
+
+        if self.gateway:
+            # lazy load
+            if not self.gateway.get_transport():
+                self.gateway.connect()
+            self.sock = self.gateway.get_transport().open_channel(
+                'direct-tcpip', (self.host, self.port), ('', 0))
 
         return super(SSH, self).connect(
             self.host,
@@ -250,6 +252,11 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         - username/password (will prompt if the password is not supplied and
                              interactive is true)
         """
+        # idempotency
+        if self.get_transport():
+            if self.get_transport().is_active():
+                return
+
         if self.private_key:
             try:
                 return self.connect_with_key()
@@ -304,6 +311,15 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
             return False
         finally:
             self.close()
+
+    def close(self):
+        """Close the connection to the remote host.
+
+        If an ssh tunnel is being used, close that first.
+        """
+        if self.gateway:
+            self.gateway.close()
+        return super(SSH, self).close()
 
     def _handle_tty_required(self, results, get_pty):
         """Determine whether the result implies a tty request."""
@@ -417,60 +433,6 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         finally:
             self.close()
 
-    def _get_proxy_socket(self, proxy):
-        """Return a wrapped subprocess running ProxyCommand-driven programs.
-
-        Create a new CommandProxy instance.
-        Can be created from an existing SSH instance.
-        For proxy clients, please specify a private key filename.
-
-        To use an ssh proxy, you must use an SSH Key,
-        since a ProxyCommand cannot be passed a password.
-        """
-        if proxy.password:
-            LOG.warning("Proxying through a client which is authorized by "
-                        "a password is not currently implemented. Please "
-                        "use an ssh key.")
-
-        proxy.load_system_host_keys()
-        if proxy.options.get('StrictHostKeyChecking') in (False, "no"):
-            proxy.set_missing_host_key_policy(AcceptMissingHostKey())
-
-        if proxy.private_key and not proxy.key_filename:
-            tempkeyfile = tempfile.NamedTemporaryFile(
-                mode='w+', prefix=TEMPFILE_PREFIX,
-                dir=os.path.expanduser('~/'), delete=True)
-            tempkeyfile.write(proxy.private_key)
-            proxy.key_filename = tempkeyfile.name
-
-        pxd = {
-            'bastion': proxy.host,
-            'user': proxy.username,
-            'port': '-p %s' % proxy.port,
-            'options': ('-o ConnectTimeout=%s ' % proxy.timeout),
-            'target_host': self.host,
-            'target_port': self.port,
-        }
-        proxycommand = "ssh {options} -A {user}@{bastion} "
-
-        if proxy.key_filename:
-            proxy.key_filename = os.path.expanduser(proxy.key_filename)
-            proxy.key_filename = os.path.abspath(proxy.key_filename)
-            pxd.update({'identity': '-i %s' % proxy.key_filename})
-            proxycommand += "{identity} "
-
-        if proxy.options:
-            for key, val in sorted(proxy.options.items()):
-                if isinstance(val, bool):
-                    # turns booleans into `ssh -o` compat "yes" or "no"
-                    if val is True:
-                        val = "yes"
-                    if val is False:
-                        val = "no"
-                pxd['options'] += '-o %s=%s ' % (key, val)
-
-        proxycommand += "nc {target_host} {target_port}"
-        return paramiko.ProxyCommand(proxycommand.format(**pxd))
 
 # Share SSH.__init__'s docstring
 connect.__doc__ = SSH.__init__.__doc__

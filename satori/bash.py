@@ -111,7 +111,6 @@ class LocalShell(ShellMixin):
         self.user = user
         self.password = password
         self.interactive = interactive
-        # TODO(samstav): Implement handle_password_prompt for popen
 
         # properties
         self._platform_info = None
@@ -157,7 +156,10 @@ class RemoteShell(ShellMixin):
 
     """Execute shell commands on a remote machine over ssh."""
 
-    def __init__(self, address, **kwargs):
+    def __init__(self, address, password=None, username=None,
+                 private_key=None, key_filename=None, port=None,
+                 timeout=None, gateway=None, options=None, interactive=False,
+                 **kwargs):
         """An interface for executing shell commands on remote machines.
 
         :param str host:        The ip address or host name of the server
@@ -171,7 +173,7 @@ class RemoteShell(ShellMixin):
         :param port:            tcp/ip port to use (defaults to 22)
         :param float timeout:   an optional timeout (in seconds) for the
                                 TCP connection
-        :param socket proxy:    an existing SSH instance to use
+        :param socket gateway:  an existing SSH instance to use
                                 for proxying
         :param dict options:    A dictionary used to set ssh options
                                 (when proxying).
@@ -183,16 +185,35 @@ class RemoteShell(ShellMixin):
                                 is equivalent.
         :keyword interactive:   If true, prompt for password if missing.
         """
-        self.sshclient = ssh.connect(address, **kwargs)
-        self.host = self.sshclient.host
-        self.port = self.sshclient.port
+        if kwargs:
+            LOG.warning("Satori RemoteClient received unrecognized "
+                        "keyword arguments: %s", kwargs.keys())
+
+        self._client = ssh.connect(
+            address, password=password, username=username,
+            private_key=private_key, key_filename=key_filename, port=port,
+            timeout=timeout, gateway=gateway, options=options,
+            interactive=interactive)
+        self.host = self._client.host
+        self.port = self._client.port
 
     @property
     def platform_info(self):
         """Return distro, version, architecture."""
-        return self.sshclient.platform_info
+        return self._client.platform_info
 
-    def execute(self, command, wd=None, with_exit_code=None):
+    def connect(self):
+        """Connect to the remote host."""
+        return self._client.connect()
+
+    def test_connection(self):
+        """Test the connection to the remote host."""
+        return self._client.test_connection()
+
+    def execute(self, command, **kwargs):
         """Execute given command over ssh."""
-        return self.sshclient.remote_execute(
-            command, wd=wd, with_exit_code=with_exit_code)
+        return self._client.remote_execute(command, **kwargs)
+
+    def close(self):
+        """Close the connection to the remote host."""
+        return self._client.close()

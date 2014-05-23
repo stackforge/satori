@@ -125,7 +125,7 @@ class TestRemoteShell(TestBashModule):
     def test_execute(self):
         self.remoteshell.execute(self.testrun.command)
         self.mock_execute.assert_called_once_with(
-            self.testrun.command, wd=None, with_exit_code=None)
+            self.testrun.command)
 
     def test_execute_resultdict(self):
         resultdict = self.remoteshell.execute(self.testrun.command)
