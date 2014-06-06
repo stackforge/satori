@@ -66,46 +66,79 @@ def system_info(client):
         SystemInfoNotJson if `ohai` does not return valid JSON.
         SystemInfoMissingJson if `ohai` does not return any JSON.
     """
-    output = client.execute("sudo -i ohai-solo")
-    not_found_msgs = ["command not found", "Could not find ohai"]
-    if any(m in k for m in not_found_msgs
-           for k in list(output.values()) if isinstance(k, six.string_types)):
-        LOG.warning("SystemInfoCommandMissing on host: [%s]", client.host)
-        raise errors.SystemInfoCommandMissing("ohai-solo missing on %s",
-                                              client.host)
-    unicode_output = unicode(output['stdout'], errors='replace')
-    try:
-        results = json.loads(unicode_output)
-    except ValueError as exc:
+    if client.is_windows():
+        powershell_command = 'Get-ComputerConfiguration'
+        output = client.execute(powershell_command)
+        unicode_output = unicode(output, errors='replace')
         try:
-            clean_output = get_json(unicode_output)
-            results = json.loads(clean_output)
+            results = json.loads(unicode_output)
         except ValueError as exc:
-            raise errors.SystemInfoNotJson(exc)
-    return results
+            try:
+                clean_output = get_json(unicode_output)
+                results = json.loads(clean_output)
+            except ValueError as err:
+                raise errors.SystemInfoNotJson(err)
+        return results
+    else:
+        output = client.execute("sudo -i ohai-solo")
+        not_found_msgs = ["command not found", "Could not find ohai"]
+        if any(m in k for m in not_found_msgs
+               for k in list(output.values()) if isinstance(k,
+                                                            six.string_types)):
+            LOG.warning("SystemInfoCommandMissing on host: [%s]", client.host)
+            raise errors.SystemInfoCommandMissing("ohai-solo missing on %s" %
+                                                  client.host)
+        unicode_output = unicode(output['stdout'], errors='replace')
+        try:
+            results = json.loads(unicode_output)
+        except ValueError as exc:
+            try:
+                clean_output = get_json(unicode_output)
+                results = json.loads(clean_output)
+            except ValueError as exc:
+                raise errors.SystemInfoNotJson(exc)
+        return results
 
 
 def install_remote(client):
     """Install ohai-solo on remote system."""
     LOG.info("Installing (or updating) ohai-solo on device %s at %s:%d",
              client.host, client.host, client.port)
-    # Download to host
-    command = "sudo wget -N http://ohai.rax.io/install.sh"
-    client.execute(command, wd='/tmp')
 
-    # Run install
-    command = "sudo bash install.sh"
-    output = client.execute(command, wd='/tmp', with_exit_code=True)
-
-    # Be a good citizen and clean up your tmp data
-    command = "sudo rm install.sh"
-    client.execute(command, wd='/tmp')
-
-    # Process install command output
-    if output['exit_code'] != 0:
-        raise errors.SystemInfoCommandInstallFailed(output['stderr'][:256])
-    else:
+    # Check is it is a windows box, but fail safely to Linux
+    is_windows = False
+    try:
+        is_windows = client.is_windows()
+    except Exception:
+        pass
+    if is_windows:
+        powershell_command = ('[scriptblock]::Create((New-Object -TypeName '
+                              'System.Net.WebClient).DownloadString('
+                              '"http://ohai.rax.io/deploy.ps1"))'
+                              '.Invoke()')
+        # check output to ensure that installation was successful
+        # if not, raise SystemInfoCommandInstallFailed
+        output = client.execute(powershell_command)
         return output
+    else:
+        # Download to host
+        command = "sudo wget -N http://ohai.rax.io/install.sh"
+        client.execute(command, wd='/tmp')
+
+        # Run install
+        command = "sudo bash install.sh"
+        output = client.execute(command, wd='/tmp', with_exit_code=True)
+
+        # Be a good citizen and clean up your tmp data
+        command = "sudo rm install.sh"
+        client.execute(command, wd='/tmp')
+
+        # Process install command output
+        if output['exit_code'] != 0:
+            raise errors.SystemInfoCommandInstallFailed(
+                output['stderr'][:256])
+        else:
+            return output
 
 
 def remove_remote(client):
@@ -117,17 +150,27 @@ def remove_remote(client):
         - redhat [5.x, 6.x]
         - centos [5.x, 6.x]
     """
-    platform_info = client.platform_info
-    if client.is_debian():
-        remove = "sudo dpkg --purge ohai-solo"
-    elif client.is_fedora():
-        remove = "sudo yum -y erase ohai-solo"
+    if client.is_windows():
+        powershell_command = ('Remove-Item -Path (Join-Path -Path '
+                              '$($env:PSModulePath.Split(";") '
+                              '| Where-Object { $_.StartsWith('
+                              '$env:SystemRoot)}) -ChildPath '
+                              '"PoSh-Ohai") -Recurse -Force -ErrorAction '
+                              'SilentlyContinue')
+        output = client.execute(powershell_command)
+        return output
     else:
-        raise errors.UnsupportedPlatform("Unknown distro: %s" %
-                                         platform_info['dist'])
-    command = "%s" % remove
-    output = client.execute(command, wd='/tmp')
-    return output
+        platform_info = client.platform_info
+        if client.is_debian():
+            remove = "sudo dpkg --purge ohai-solo"
+        elif client.is_fedora():
+            remove = "sudo yum -y erase ohai-solo"
+        else:
+            raise errors.UnsupportedPlatform("Unknown distro: %s" %
+                                             platform_info['dist'])
+        command = "%s" % remove
+        output = client.execute(command, wd='/tmp')
+        return output
 
 
 def get_json(data):
