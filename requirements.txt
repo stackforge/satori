@@ -2,8 +2,9 @@ ipaddress>=1.0.6            # in stdlib as of python3.3
 iso8601>=0.1.5
 Jinja2>=2.7.1               # bug resolve @2.7.1
 paramiko>=1.12.0            # ecdsa added
-pbr>=0.5.21,<1.0
+pbr>=0.6,!=0.7,<1.0
 python-novaclient>=2.6.0.1  # breaks before
 pythonwhois>=2.0.0
 six>=1.4.0                  # urllib introduced
 tldextract>=1.2
+argparse

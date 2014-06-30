@@ -15,3 +15,4 @@ pep257>=0.3.2                 # patched for py33
 sphinx>=1.2.2
 testrepository>=0.0.17
 testtools>=0.9.32
+pep8==1.5.7
