@@ -6,3 +6,4 @@ python-novaclient>=2.15.0    # py33 support
 pythonwhois>=2.1.0           # py33 support
 six>=1.4.0
 tldextract>=1.2
+argparse
