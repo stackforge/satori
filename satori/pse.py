@@ -10,10 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Windows remote client module implemented using psexec.py.
-
-bla
-"""
+"""Windows remote client module implemented using contrib/psexec.py."""
 
 import eventlet
 eventlet.monkey_patch()
@@ -95,7 +92,7 @@ class PSE(object):  # pylint: disable=R0902
         self.ssh_tunnel = None
         self._substituted_command = None
 
-        #creating temp file to talk to _process with
+        # creating temp file to talk to _process with
         self._file_write = tempfile.NamedTemporaryFile()
         self._file_read = open(self._file_write.name, 'r')
 
@@ -155,7 +152,7 @@ class PSE(object):  # pylint: disable=R0902
         This will tunnel a local ephemeral port to the host's port.
         This will preserve the original host and port
         """
-        self.ssh_tunnel = tunnel.connect(self.host, self.port, self.gateway)
+        self.ssh_tunnel = tunnel.Tunnel(self.host, self.port, self.gateway)
         self._orig_host = self.host
         self._orig_port = self.port
         self.host, self.port = self.ssh_tunnel.address
