@@ -13,7 +13,9 @@
 
 """SSH tunneling module.
 
-This module exposes methods to establish an SSH tunnel (similar to ssh -L)
+Set up a forward tunnel across an SSH server, using paramiko. A local port
+(given with -p) is forwarded across an SSH session to an address:port from
+the SSH server. This is similar to the openssh -L option.
 """
 import eventlet
 eventlet.monkey_patch()
@@ -21,14 +23,10 @@ eventlet.monkey_patch()
 import logging
 import select
 import socket
-#from eventlet.green
 import SocketServer
 
 from eventlet import greenthread
 import paramiko
-
-from satori import ssh
-
 
 LOG = logging.getLogger(__name__)
 
@@ -49,9 +47,13 @@ class TunnelHandler(SocketServer.BaseRequestHandler):
     """Handle forwarding of packets."""
 
     def handle(self):
-        """Only method of the Class.
+        """Do all the work required to service a request.
 
-        This will do the forwarding of packets
+        The request is available as self.request, the client address as
+        self.client_address, and the server instance as self.server, in
+        case it needs to access per-server information.
+
+        This implementation will forward packets.
         """
         try:
             chan = self.ssh_transport.open_channel('direct-tcpip',
@@ -84,19 +86,18 @@ class TunnelHandler(SocketServer.BaseRequestHandler):
                 self.request.send(data)
 
         try:
-            peername = "Unknown"
-            peername = self.request.getpeername()
+            peername = None
+            peername = str(self.request.getpeername())
         except socket.error as exc:
-            LOG.warning("ERROR: Couldn't fetch peername, tunnel "
-                        "has been closed. %s", str(exc))
+            LOG.warning("Couldn't fetch peername.", exc_info=exc)
         chan.close()
         self.request.close()
-        LOG.info('Tunnel closed from %s', str(peername))
+        LOG.info("Tunnel closed from '%s'", peername or 'unnamed peer')
 
 
 class Tunnel(object):  # pylint: disable=R0902
 
-    """docstring."""
+    """Create a TCP server which will use TunnelHandler."""
 
     def __init__(self, target_host, target_port,
                  sshclient, tunnel_host='localhost',
@@ -121,7 +122,7 @@ class Tunnel(object):  # pylint: disable=R0902
         TunnelHandler.ssh_transport = self._ssh_transport
 
         self._tunnel = TunnelServer(self.address, TunnelHandler)
-        # reset attribute to the port it has actually ben set to
+        # reset attribute to the port it has actually been set to
         self.address = self._tunnel.server_address
         tunnel_host, self.tunnel_port = self.address
 
@@ -148,32 +149,10 @@ class Tunnel(object):  # pylint: disable=R0902
     def shutdown(self):
         """Stop serving the tunnel.
 
-        Also close the socket
+        Also close the socket.
         """
         self._tunnel.shutdown()
         self._tunnel.socket.close()
-
-
-HELP = """
-Set up a forward tunnel across an SSH server, using paramiko. A local port
-(given with -p) is forwarded across an SSH session to an address:port from
-the SSH server. This is similar to the openssh -L option.
-"""
-
-
-def connect(targethost, targetport, sshclient):
-    """Establish an ssh tunnel.
-
-    Connect to the sshclient that has been passed in and establish a tunnel
-    from the first available local ephemeral port to the targetport on the
-    targethost.
-    """
-    return Tunnel(targethost, targetport, sshclient)
-
-
-def get_sshclient(*args, **kwargs):
-    """Return a paramiko SSH client."""
-    kwargs.setdefault('options', {})
-    kwargs['options'].update({'StrictHostKeyChecking': False})
-    kwargs['timeout'] = None
-    return ssh.connect(*args, **kwargs)
+        # TODO(samstav):
+        #   kill _tunnel_greenthread?
+        #   kill self._tunnel._handler.ssh_transport ?

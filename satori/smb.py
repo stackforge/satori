@@ -95,7 +95,7 @@ class SMBClient(object):  # pylint: disable=R0902
         self.ssh_tunnel = None
         self._substituted_command = None
 
-        #creating temp file to talk to _process with
+        # creating temp file to talk to _process with
         self._file_write = tempfile.NamedTemporaryFile()
         self._file_read = open(self._file_write.name, 'r')
 
