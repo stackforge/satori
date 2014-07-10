@@ -55,10 +55,10 @@ def run(target, config=None, interactive=False):
         hostname = dns.parse_target_hostname(target)
         found['hostname'] = hostname
         ip_address = six.text_type(dns.resolve_hostname(hostname))
-        #TODO(sam): Use ipaddress.ip_address.is_global
-        #                   "               .is_private
-        #                   "               .is_unspecified
-        #                   "               .is_multicast
+        # TODO(sam): Use ipaddress.ip_address.is_global
+        #                                    .is_private
+        #                                    .is_unspecified
+        #                                    .is_multicast
         #       To determine address "type"
         if not ipaddress.ip_address(ip_address).is_loopback:
             try:
