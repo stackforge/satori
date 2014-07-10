@@ -120,7 +120,7 @@ class TestDNS(utils.TestCase):
 
         patcher = mock.patch.object(pythonwhois.net, 'get_whois_raw')
         self.mock_get_whois_raw = patcher.start()
-        self.mock_get_whois_raw.return_value = self.WHOIS
+        self.mock_get_whois_raw.return_value = self.WHOIS, [None]
         self.addCleanup(patcher.stop)
 
         super(TestDNS, self).setUp()
@@ -187,7 +187,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mock_get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois, [None]
         data = dns.domain_info(self.domain)
         self.assertEqual(
             [],
@@ -224,7 +224,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mock_get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois, [None]
         data = dns.domain_info(self.domain)
         self.assertEqual(
             data['days_until_expires'],
@@ -244,7 +244,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mock_get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois, [None]
         data = dns.domain_info(self.domain)
         self.assertIsInstance(data['expiration_date'], six.string_types)
 
@@ -260,7 +260,7 @@ class TestDNS(utils.TestCase):
         NS 1   : dns1.example.com
         NS 2   : dns2.example.com
         """]
-        self.mock_get_whois_raw.return_value = small_whois
+        self.mock_get_whois_raw.return_value = small_whois, [None]
         data = dns.domain_info(self.domain)
         self.assertIsNone(data['expiration_date'])
 
@@ -269,7 +269,7 @@ class TestDNS(utils.TestCase):
         Home net HOME-NET-192-168 (NET-192-0-0-0-1)
         Home Inc. HOME-NET-192-168-0 (NET-192-168-0-0-1)
         """]
-        self.mock_get_whois_raw.return_value = ip_whois
+        self.mock_get_whois_raw.return_value = ip_whois, [None]
         self.assertRaises(
             errors.SatoriInvalidDomain,
             dns.domain_info,
