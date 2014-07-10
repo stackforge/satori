@@ -24,10 +24,6 @@ from satori import errors
 from satori import utils
 
 LOG = logging.getLogger(__name__)
-if six.PY3:
-    def unicode(text, errors=None):  # noqa
-        """A hacky Python 3 version of unicode() function."""
-        return str(text)
 
 
 def get_systeminfo(ipaddress, config, interactive=False):
@@ -38,7 +34,7 @@ def get_systeminfo(ipaddress, config, interactive=False):
     :keyword interactive: whether to prompt the user for information.
     """
     if (ipaddress in utils.get_local_ips() or
-            ipaddress_module.ip_address(unicode(ipaddress)).is_loopback):
+            ipaddress_module.ip_address(utils.unicode(ipaddress)).is_loopback):
 
         client = bash.LocalShell()
         client.host = "localhost"
@@ -67,18 +63,9 @@ def system_info(client):
         SystemInfoMissingJson if `ohai` does not return any JSON.
     """
     if client.is_windows():
-        powershell_command = 'Get-ComputerConfiguration'
-        output = client.execute(powershell_command)
-        unicode_output = unicode(output, errors='replace')
-        try:
-            results = json.loads(unicode_output)
-        except ValueError as exc:
-            try:
-                clean_output = get_json(unicode_output)
-                results = json.loads(clean_output)
-            except ValueError as err:
-                raise errors.SystemInfoNotJson(err)
-        return results
+        raise errors.UnsupportedPlatform(
+            "ohai-solo is a linux-only sytem info provider. "
+            "Target platform was %s", client.platform_info['dist'])
     else:
         output = client.execute("sudo -i ohai-solo")
         not_found_msgs = ["command not found", "Could not find ohai"]
@@ -88,7 +75,7 @@ def system_info(client):
             LOG.warning("SystemInfoCommandMissing on host: [%s]", client.host)
             raise errors.SystemInfoCommandMissing("ohai-solo missing on %s" %
                                                   client.host)
-        unicode_output = unicode(output['stdout'], errors='replace')
+        unicode_output = utils.unicode(output['stdout'], errors='replace')
         try:
             results = json.loads(unicode_output)
         except ValueError as exc:
@@ -112,14 +99,9 @@ def install_remote(client):
     except Exception:
         pass
     if is_windows:
-        powershell_command = ('[scriptblock]::Create((New-Object -TypeName '
-                              'System.Net.WebClient).DownloadString('
-                              '"http://ohai.rax.io/deploy.ps1"))'
-                              '.Invoke()')
-        # check output to ensure that installation was successful
-        # if not, raise SystemInfoCommandInstallFailed
-        output = client.execute(powershell_command)
-        return output
+        raise errors.UnsupportedPlatform(
+            "ohai-solo is a linux-only sytem info provider. "
+            "Target platform was %s", client.platform_info['dist'])
     else:
         # Download to host
         command = "sudo wget -N http://ohai.rax.io/install.sh"
@@ -151,14 +133,9 @@ def remove_remote(client):
         - centos [5.x, 6.x]
     """
     if client.is_windows():
-        powershell_command = ('Remove-Item -Path (Join-Path -Path '
-                              '$($env:PSModulePath.Split(";") '
-                              '| Where-Object { $_.StartsWith('
-                              '$env:SystemRoot)}) -ChildPath '
-                              '"PoSh-Ohai") -Recurse -Force -ErrorAction '
-                              'SilentlyContinue')
-        output = client.execute(powershell_command)
-        return output
+        raise errors.UnsupportedPlatform(
+            "ohai-solo is a linux-only sytem info provider. "
+            "Target platform was %s", client.platform_info['dist'])
     else:
         platform_info = client.platform_info
         if client.is_debian():
@@ -177,7 +154,7 @@ def get_json(data):
     """Find the JSON string in data and return a string.
 
     :param data: :string:
-    :returns: string -- JSON string striped of non-JSON data
+    :returns: string -- JSON string stripped of non-JSON data
     :raises: SystemInfoMissingJson
 
         SystemInfoMissingJson if `ohai` does not return any JSON.

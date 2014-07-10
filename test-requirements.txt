@@ -1,9 +1,6 @@
-# pep8 with support for empty files through flake8
--e git://github.com/ziadsawalha/pep8.git@19b64e1d6b52cb814e482188369f4db24e0e82c2#egg=pep8
-
 # Newer hacking
 # Includes two fixes for handling blank lines in files and for handling egg-linked libraries
--e git://github.com/ziadsawalha/hacking.git@76ff3d0c8b116df147b7e4ca00afda67a9537f2a#egg=hacking
+-e git://github.com/samstav/hacking.git@satori#egg=hacking
 
 coverage>=3.6
 discover
@@ -11,6 +8,7 @@ flake8_docstrings>=0.2.0      # patched for py33
 fixtures>=0.3.14
 freezegun
 mock>=1.0
+pep8>=1.5.7
 pep257>=0.3.2                 # patched for py33
 sphinx>=1.2.2
 testrepository>=0.0.17
