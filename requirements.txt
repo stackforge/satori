@@ -1,4 +1,4 @@
-eventlet==0.14.0
+eventlet>=0.14.0
 impacket>=0.9.11
 ipaddress>=1.0.6            # in stdlib as of python3.3
 iso8601>=0.1.5

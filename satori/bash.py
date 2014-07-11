@@ -23,7 +23,7 @@ import shlex
 import subprocess
 
 from satori import errors
-from satori import pse
+from satori import smb
 from satori import ssh
 from satori import utils
 
@@ -90,7 +90,7 @@ class ShellMixin(object):
         Uses the platform_info property.
         """
         if hasattr(self, '_client'):
-            if isinstance(self._client, pse.PSE):
+            if isinstance(self._client, smb.SMBClient):
                 return True
         if not self.platform_info['dist']:
             raise errors.UndeterminedPlatform(
@@ -195,8 +195,8 @@ class RemoteShell(ShellMixin):
             LOG.warning("Satori RemoteClient received unrecognized "
                         "keyword arguments: %s", kwargs.keys())
 
-        if protocol == 'psexec':
-            self._client = pse.connect(address, password=password,
+        if protocol == 'smb':
+            self._client = smb.connect(address, password=password,
                                        username=username,
                                        port=port, timeout=timeout,
                                        gateway=gateway)

@@ -36,7 +36,7 @@ LOG = logging.getLogger(__name__)
 def connect(*args, **kwargs):
     """Connect to a remote device using psexec.py."""
     try:
-        return PSE.get_client(*args, **kwargs)
+        return SMBClient.get_client(*args, **kwargs)
     except Exception as exc:
         LOG.error("ERROR: pse.py failed to connect: %s", str(exc))
 
@@ -60,7 +60,7 @@ class SubprocessError(Exception):
     pass
 
 
-class PSE(object):  # pylint: disable=R0902
+class SMBClient(object):  # pylint: disable=R0902
 
     """Connects to devices over SMB/psexec to execute commands."""
 
