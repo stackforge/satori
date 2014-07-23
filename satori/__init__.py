@@ -14,6 +14,12 @@
 
 __all__ = ('__version__')
 
+try:
+    import eventlet
+    eventlet.monkey_patch()
+except ImportError:
+    pass
+
 import pbr.version
 
 from satori import shell
