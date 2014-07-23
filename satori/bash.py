@@ -23,6 +23,7 @@ import shlex
 import subprocess
 
 from satori import errors
+from satori import smb
 from satori import ssh
 from satori import utils
 
@@ -33,16 +34,21 @@ class ShellMixin(object):
 
     """Handle platform detection and define execute command."""
 
-    def execute(self, command, wd=None, with_exit_code=None):
+    def execute(self, command, **kwargs):
         """Execute a (shell) command on the target.
 
         :param command:         Shell command to be executed
         :param with_exit_code:  Include the exit_code in the return body.
-        :param wd:              The child's current directory will be changed
-                                to `wd` before it is executed. Note that this
+        :param cwd:              The child's current directory will be changed
+                                to `cwd` before it is executed. Note that this
                                 directory is not considered when searching the
                                 executable, so you can't specify the program's
                                 path relative to this argument
+        :returns:               a dict with stdin, stdout, and
+                                (optionally), the exit_code of the call
+
+        See SSH.remote_execute(), SMB.remote_execute(), and LocalShell.execute()
+        for client-specific keyword arguments.
         """
         pass
 
@@ -88,6 +94,9 @@ class ShellMixin(object):
 
         Uses the platform_info property.
         """
+        if hasattr(self, '_client'):
+            if isinstance(self._client, smb.SMBClient):
+                return True
         if not self.platform_info['dist']:
             raise errors.UndeterminedPlatform(
                 'Unable to determine whether the system is Windows based.')
@@ -122,26 +131,28 @@ class LocalShell(ShellMixin):
             self._platform_info = utils.get_platform_info()
         return self._platform_info
 
-    def execute(self, command, wd=None, with_exit_code=None):
+    def execute(self, command, **kwargs):
         """Execute a command (containing no shell operators) locally.
 
         :param command:         Shell command to be executed.
         :param with_exit_code:  Include the exit_code in the return body.
                                 Default is False.
-        :param wd:              The child's current directory will be changed
-                                to `wd` before it is executed. Note that this
+        :param cwd:              The child's current directory will be changed
+                                to `cwd` before it is executed. Note that this
                                 directory is not considered when searching the
                                 executable, so you can't specify the program's
                                 path relative to this argument
         :returns:               A dict with stdin, stdout, and
                                 (optionally) the exit code.
         """
+        cwd = kwargs.get('cwd')
+        with_exit_code = kwargs.get('with_exit_code')
         spipe = subprocess.PIPE
 
         cmd = shlex.split(command)
         LOG.debug("Executing `%s` on local machine", command)
         result = subprocess.Popen(
-            cmd, stdout=spipe, stderr=spipe, cwd=wd)
+            cmd, stdout=spipe, stderr=spipe, cwd=cwd)
         out, err = result.communicate()
         resultdict = {
             'stdout': out.strip(),
@@ -159,7 +170,7 @@ class RemoteShell(ShellMixin):
     def __init__(self, address, password=None, username=None,
                  private_key=None, key_filename=None, port=None,
                  timeout=None, gateway=None, options=None, interactive=False,
-                 **kwargs):
+                 protocol='ssh', **kwargs):
         """An interface for executing shell commands on remote machines.
 
         :param str host:        The ip address or host name of the server
@@ -189,11 +200,20 @@ class RemoteShell(ShellMixin):
             LOG.warning("Satori RemoteClient received unrecognized "
                         "keyword arguments: %s", kwargs.keys())
 
-        self._client = ssh.connect(
-            address, password=password, username=username,
-            private_key=private_key, key_filename=key_filename, port=port,
-            timeout=timeout, gateway=gateway, options=options,
-            interactive=interactive)
+        if protocol == 'smb':
+            self._client = smb.connect(address, password=password,
+                                       username=username,
+                                       port=port, timeout=timeout,
+                                       gateway=gateway)
+        else:
+            self._client = ssh.connect(address, password=password,
+                                       username=username,
+                                       private_key=private_key,
+                                       key_filename=key_filename,
+                                       port=port, timeout=timeout,
+                                       gateway=gateway,
+                                       options=options,
+                                       interactive=interactive)
         self.host = self._client.host
         self.port = self._client.port
 
