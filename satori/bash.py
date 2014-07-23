@@ -23,6 +23,7 @@ import shlex
 import subprocess
 
 from satori import errors
+from satori import smb
 from satori import ssh
 from satori import utils
 
@@ -33,7 +34,7 @@ class ShellMixin(object):
 
     """Handle platform detection and define execute command."""
 
-    def execute(self, command, wd=None, with_exit_code=None):
+    def execute(self, command, **kwargs):
         """Execute a (shell) command on the target.
 
         :param command:         Shell command to be executed
@@ -88,6 +89,9 @@ class ShellMixin(object):
 
         Uses the platform_info property.
         """
+        if hasattr(self, '_client'):
+            if isinstance(self._client, smb.SMBClient):
+                return True
         if not self.platform_info['dist']:
             raise errors.UndeterminedPlatform(
                 'Unable to determine whether the system is Windows based.')
@@ -122,7 +126,7 @@ class LocalShell(ShellMixin):
             self._platform_info = utils.get_platform_info()
         return self._platform_info
 
-    def execute(self, command, wd=None, with_exit_code=None):
+    def execute(self, command, **kwargs):
         """Execute a command (containing no shell operators) locally.
 
         :param command:         Shell command to be executed.
@@ -136,6 +140,8 @@ class LocalShell(ShellMixin):
         :returns:               A dict with stdin, stdout, and
                                 (optionally) the exit code.
         """
+        wd = kwargs.get('wd')
+        with_exit_code = kwargs.get('with_exit_code')
         spipe = subprocess.PIPE
 
         cmd = shlex.split(command)
@@ -159,7 +165,7 @@ class RemoteShell(ShellMixin):
     def __init__(self, address, password=None, username=None,
                  private_key=None, key_filename=None, port=None,
                  timeout=None, gateway=None, options=None, interactive=False,
-                 **kwargs):
+                 protocol='ssh', **kwargs):
         """An interface for executing shell commands on remote machines.
 
         :param str host:        The ip address or host name of the server
@@ -189,11 +195,20 @@ class RemoteShell(ShellMixin):
             LOG.warning("Satori RemoteClient received unrecognized "
                         "keyword arguments: %s", kwargs.keys())
 
-        self._client = ssh.connect(
-            address, password=password, username=username,
-            private_key=private_key, key_filename=key_filename, port=port,
-            timeout=timeout, gateway=gateway, options=options,
-            interactive=interactive)
+        if protocol == 'smb':
+            self._client = smb.connect(address, password=password,
+                                       username=username,
+                                       port=port, timeout=timeout,
+                                       gateway=gateway)
+        else:
+            self._client = ssh.connect(address, password=password,
+                                       username=username,
+                                       private_key=private_key,
+                                       key_filename=key_filename,
+                                       port=port, timeout=timeout,
+                                       gateway=gateway,
+                                       options=options,
+                                       interactive=interactive)
         self.host = self._client.host
         self.port = self._client.port
 
