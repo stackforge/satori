@@ -25,9 +25,13 @@ import sys
 import time
 
 import iso8601
+import six
 
 LOG = logging.getLogger(__name__)
 STRING_FORMAT = "%Y-%m-%d %H:%M:%S +0000"
+
+
+unicode = str if six.PY3 else unicode
 
 
 def import_class(import_str):
