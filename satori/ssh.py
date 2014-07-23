@@ -129,10 +129,10 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         """
         self.password = password
         self.host = host
-        self.username = username
+        self.username = username or 'root'
         self.private_key = private_key
         self.key_filename = key_filename
-        self.port = port
+        self.port = port or 22
         self.timeout = timeout
         self._platform_info = None
         self.options = options or {}
@@ -160,7 +160,6 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         Requires >= Python 2.4 on remote system.
         """
         if not self._platform_info:
-
             platform_command = "import platform,sys\n"
             platform_command += utils.get_source_definition(
                 utils.get_platform_info)
@@ -169,10 +168,18 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
             command = 'echo -e """%s""" | python' % platform_command
             output = self.remote_execute(command)
             stdout = re.split('\n|\r\n', output['stdout'])[-1].strip()
-            plat = ast.literal_eval(stdout)
+            if stdout:
+                try:
+                    plat = ast.literal_eval(stdout)
+                except SyntaxError as exc:
+                    plat = {'dist': 'unknown'}
+                    LOG.warning("Error parsing response from host '%s': %s",
+                                self.host, output, exc_info=exc)
+            else:
+                plat = {'dist': 'unknown'}
+                LOG.warning("Blank response from host '%s': %s",
+                            self.host, output)
             self._platform_info = plat
-
-        LOG.debug("Remote platform info: %s", self._platform_info)
         return self._platform_info
 
     def connect_with_host_keys(self):
@@ -362,7 +369,7 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         return False
 
     def remote_execute(self, command, with_exit_code=False,
-                       get_pty=False, wd=None):
+                       get_pty=False, cwd=None, **kwargs):
         """Execute an ssh command on a remote host.
 
         Tries cert auth first and falls back
@@ -370,8 +377,8 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
         :param command:         Shell command to be executed by this function.
         :param with_exit_code:  Include the exit_code in the return body.
-        :param wd:              The child's current directory will be changed
-                                to `wd` before it is executed. Note that this
+        :param cwd:             The child's current directory will be changed
+                                to `cwd` before it is executed. Note that this
                                 directory is not considered when searching the
                                 executable, so you can't specify the program's
                                 path relative to this argument
@@ -380,8 +387,8 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         :returns: a dict with stdin, stdout,
                   and (optionally) the exit code of the call.
         """
-        if wd:
-            prefix = "cd %s && " % wd
+        if cwd:
+            prefix = "cd %s && " % cwd
             command = prefix + command
 
         LOG.debug("Executing '%s' on ssh://%s@%s:%s.",
@@ -408,10 +415,10 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
                 'stderr': stderr.read()
             }
 
-            LOG.debug("STDOUT from ssh://%s@%s:%d: %s",
+            LOG.debug("STDOUT from ssh://%s@%s:%d: %.5000s ...",
                       self.username, self.host, self.port,
                       results['stdout'])
-            LOG.debug("STDERR from ssh://%s@%s:%d: %s",
+            LOG.debug("STDERR from ssh://%s@%s:%d: %.5000s ...",
                       self.username, self.host, self.port,
                       results['stderr'])
             exit_code = chan.recv_exit_status()
