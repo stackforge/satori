@@ -1,3 +1,7 @@
+#slightly improved version of impacket that allows you to use imacket.examples.serviceinstall
+#to create services that are not randomly named
+-e git://github.com/nick-o/impacket.git@e4fcac42975fd2f20d9ae6e8643c0fd9fab33c7a#egg=impacket
+
 ipaddress>=1.0.6            # in stdlib as of python3.3
 iso8601>=0.1.5
 Jinja2>=2.7.1               # bug resolve @2.7.1
