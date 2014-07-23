@@ -9,3 +9,7 @@ no-docstring-rgx=((__.*__)|([tT]est.*)|setUp|tearDown)$
 [Design]
 min-public-methods=0
 max-args=6
+
+[Master]
+#We try to keep contrib files unmodified
+ignore=satori/contrib
