@@ -150,7 +150,7 @@ class SMBClient(object):  # pylint: disable=R0902
         This will tunnel a local ephemeral port to the host's port.
         This will preserve the original host and port
         """
-        self.ssh_tunnel = tunnel.connect(self.host, self.port, self.gateway)
+        self.ssh_tunnel = tunnel.Tunnel(self.host, self.port, self.gateway)
         self._orig_host = self.host
         self._orig_port = self.port
         self.host, self.port = self.ssh_tunnel.address
@@ -292,7 +292,7 @@ class SMBClient(object):  # pylint: disable=R0902
                                       % (self._process.pid,
                                          self._process.poll(),
                                          json.dumps(error)))
-            time.sleep(wait/1000)
+            time.sleep(wait / 1000)
         stdout = tmp_out
         while (not tmp_out == '' or
                (not self._prompt_pattern.findall(stdout) and
@@ -310,7 +310,7 @@ class SMBClient(object):  # pylint: disable=R0902
                                       % (self._process.pid,
                                          self._process.poll(),
                                          json.dumps(error)))
-            time.sleep(wait/1000)
+            time.sleep(wait / 1000)
         self._output += stdout
         stdout = stdout.replace('\r', '').replace('\x08', '')
         return stdout
