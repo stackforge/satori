@@ -154,7 +154,7 @@ class Tunnel(object):  # pylint: disable=R0902
         else:
             self._tunnel_thread = threading.Thread(
                 target=self._tunnel.serve_forever)
-            self.start()
+            self._tunnel_thread.start()
             # cooperative yield
             time.sleep(0)
 

@@ -190,7 +190,7 @@ def get_source_definition(function, with_docstring=False):
     for line in definition.split('\n'):
         # pylint: disable=W0141
         if not any(map(line.strip().startswith, ("@", "def"))):
-            line = " "*4 + line
+            line = " " * 4 + line
         definition_copy.append(line)
 
     return "\n".join(definition_copy).strip()

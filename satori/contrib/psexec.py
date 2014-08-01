@@ -8,7 +8,7 @@
 # $Id: psexec.py 712 2012-09-06 04:26:22Z bethus@gmail.com $
 #
 # PSEXEC like functionality example using
-#RemComSvc (https://github.com/kavika13/RemCom)
+# RemComSvc (https://github.com/kavika13/RemCom)
 #
 # Author:
 #  beto (bethus@gmail.com)
@@ -21,32 +21,31 @@
 OK
 """
 
-
 import cmd
 import os
 import re
 import sys
 
-#from impacket.smbconnection import *
 from impacket.dcerpc import dcerpc
 from impacket.dcerpc import transport
 from impacket.examples import remcomsvc
-from impacket.examples import serviceinstall
 from impacket import smbconnection
 from impacket import structure as im_structure
 from impacket import version
-#from impacket.dcerpc import dcerpc_v4
-#from impacket.dcerpc import srvsvc
-#from impacket.dcerpc import svcctl
-#from impacket.smbconnection import smb
-#from impacket.smbconnection import SMB_DIALECT
-#from impacket.smbconnection import SMBConnection
+
+from satori import serviceinstall
 
 import argparse
 import random
 import string
-import threading
-import time
+
+try:
+    import eventlet
+    threading = eventlet.patcher.original('threading')
+    time = eventlet.patcher.original('time')
+except ImportError:
+    import threading
+    import time
 
 
 class RemComMessage(im_structure.Structure):
@@ -279,9 +278,9 @@ class Pipes(threading.Thread):
             global dialect
 
             remoteHost = self.transport.get_smb_connection().getRemoteHost()
-            #self.server = SMBConnection('*SMBSERVER',
-            #self.transport.get_smb_connection().getRemoteHost(),
-            #sess_port = self.port, preferredDialect = SMB_DIALECT)
+            # self.server = SMBConnection('*SMBSERVER',
+            # self.transport.get_smb_connection().getRemoteHost(),
+            # sess_port = self.port, preferredDialect = SMB_DIALECT)
             self.server = smbconnection.SMBConnection('*SMBSERVER', remoteHost,
                                         sess_port=self.port,
                                         preferredDialect=dialect)  # noqa
@@ -380,9 +379,9 @@ class RemoteShell(cmd.Cmd):
 
     def connect_transferClient(self):
         """."""
-        #self.transferClient = SMBConnection('*SMBSERVER',
-        #self.server.getRemoteHost(), sess_port = self.port,
-        #preferredDialect = SMB_DIALECT)
+        # self.transferClient = SMBConnection('*SMBSERVER',
+        # self.server.getRemoteHost(), sess_port = self.port,
+        # preferredDialect = SMB_DIALECT)
         self.transferClient = smbconnection.SMBConnection('*SMBSERVER',
                                             self.server.getRemoteHost(),
                                             sess_port=self.port,
