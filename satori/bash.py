@@ -222,6 +222,19 @@ class RemoteShell(ShellMixin):
         """Return distro, version, architecture."""
         return self._client.platform_info
 
+    def __del__(self):
+        """Destructor which should close the connection."""
+        self.close()
+
+    def __enter__(self):
+        """Context manager establish connection."""
+        self.connect()
+        return self
+
+    def __exit__(self, *exc_info):
+        """Context manager close connection."""
+        self.close()
+
     def connect(self):
         """Connect to the remote host."""
         return self._client.connect()
