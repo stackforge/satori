@@ -37,13 +37,14 @@ class TestOhaiSolo(utils.TestCase):
         self.assertTrue(result is mock_sysinfo.return_value)
 
         mock_install.assert_called_once_with(
-            mock_bash.RemoteShell.return_value)
+            mock_bash.RemoteShell().__enter__.return_value)
 
-        mock_bash.RemoteShell.assert_called_with(
+        mock_bash.RemoteShell.assert_any_call(
             address, username="bar",
             private_key="foo",
             interactive=False)
-        mock_sysinfo.assert_called_with(mock_bash.RemoteShell.return_value)
+        mock_sysinfo.assert_called_with(
+            mock_bash.RemoteShell().__enter__.return_value)
 
 
 class TestOhaiInstall(utils.TestCase):

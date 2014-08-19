@@ -148,6 +148,10 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
         super(SSH, self).__init__()
 
+    def __del__(self):
+        """Destructor to close the connection."""
+        self.close()
+
     @classmethod
     def get_client(cls, *args, **kwargs):
         """Return an ssh client object from this module."""
@@ -369,7 +373,7 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
         return False
 
     def remote_execute(self, command, with_exit_code=False,
-                       get_pty=False, cwd=None, **kwargs):
+                       get_pty=False, cwd=None, keepalive=True, **kwargs):
         """Execute an ssh command on a remote host.
 
         Tries cert auth first and falls back
@@ -425,7 +429,8 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
 
             if with_exit_code:
                 results.update({'exit_code': exit_code})
-            chan.close()
+            if not keepalive:
+                chan.close()
 
             if self._handle_tty_required(results, get_pty):
                 return self.remote_execute(
@@ -438,7 +443,8 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
                      self.port, exc)
             raise
         finally:
-            self.close()
+            if not keepalive:
+                self.close()
 
 
 # Share SSH.__init__'s docstring
