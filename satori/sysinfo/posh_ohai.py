@@ -39,14 +39,16 @@ def get_systeminfo(ipaddress, config, interactive=False):
         client = bash.LocalShell()
         client.host = "localhost"
         client.port = 0
+        perform_install(client)
+        return system_info(client)
 
     else:
-        client = bash.RemoteShell(ipaddress, username=config['host_username'],
-                                  private_key=config['host_key'],
-                                  interactive=interactive)
-
-    install_remote(client)
-    return system_info(client)
+        with bash.RemoteShell(
+                ipaddress, username=config['host_username'],
+                private_key=config['host_key'],
+                interactive=interactive) as client:
+            perform_install(client)
+            return system_info(client)
 
 
 def system_info(client):
@@ -81,7 +83,7 @@ def system_info(client):
             "Target platform was %s", client.platform_info['dist'])
 
 
-def install_remote(client):
+def perform_install(client):
     """Install PoSh-Ohai on remote system."""
     LOG.info("Installing (or updating) PoSh-Ohai on device %s at %s:%d",
              client.host, client.host, client.port)

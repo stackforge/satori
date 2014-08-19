@@ -138,6 +138,25 @@ class TestRemoteShell(TestBashModule):
         self.assertEqual(self.resultdict, resultdict)
 
 
+class TestContextManager(utils.TestCase):
+
+    def setUp(self):
+        super(TestContextManager, self).setUp()
+        connect_patcher = mock.patch.object(bash.RemoteShell, 'connect')
+        close_patcher = mock.patch.object(bash.RemoteShell, 'close')
+        self.mock_connect = connect_patcher.start()
+        self.mock_close = close_patcher.start()
+        self.addCleanup(connect_patcher.stop)
+        self.addCleanup(close_patcher.stop)
+
+    def test_context_manager(self):
+        with bash.RemoteShell('192.168.2.10') as client:
+            pass
+        self.assertTrue(self.mock_connect.call_count == 1)
+        # >=1 because __del__ (in most python implementations)
+        # calls close()
+        self.assertTrue(self.mock_close.call_count >= 1)
+
 class TestIsDistro(TestRemoteShell):
 
     def setUp(self):

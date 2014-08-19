@@ -25,7 +25,7 @@ class TestOhaiSolo(utils.TestCase):
 
     @mock.patch.object(ohai_solo, 'bash')
     @mock.patch.object(ohai_solo, 'system_info')
-    @mock.patch.object(ohai_solo, 'install_remote')
+    @mock.patch.object(ohai_solo, 'perform_install')
     def test_connect_and_run(self, mock_install, mock_sysinfo, mock_bash):
         address = "192.0.2.2"
         config = {
@@ -37,13 +37,14 @@ class TestOhaiSolo(utils.TestCase):
         self.assertTrue(result is mock_sysinfo.return_value)
 
         mock_install.assert_called_once_with(
-            mock_bash.RemoteShell.return_value)
+            mock_bash.RemoteShell().__enter__.return_value)
 
-        mock_bash.RemoteShell.assert_called_with(
+        mock_bash.RemoteShell.assert_any_call(
             address, username="bar",
             private_key="foo",
             interactive=False)
-        mock_sysinfo.assert_called_with(mock_bash.RemoteShell.return_value)
+        mock_sysinfo.assert_called_with(
+            mock_bash.RemoteShell().__enter__.return_value)
 
 
 class TestOhaiInstall(utils.TestCase):
@@ -53,10 +54,10 @@ class TestOhaiInstall(utils.TestCase):
         self.mock_remotesshclient = mock.MagicMock()
         self.mock_remotesshclient.is_windows.return_value = False
 
-    def test_install_remote_fedora(self):
+    def test_perform_install_fedora(self):
         response = {'exit_code': 0, 'foo': 'bar'}
         self.mock_remotesshclient.execute.return_value = response
-        result = ohai_solo.install_remote(self.mock_remotesshclient)
+        result = ohai_solo.perform_install(self.mock_remotesshclient)
         self.assertEqual(result, response)
         self.assertEqual(self.mock_remotesshclient.execute.call_count, 3)
         self.mock_remotesshclient.execute.assert_has_calls([
@@ -68,7 +69,7 @@ class TestOhaiInstall(utils.TestCase):
         response = {'exit_code': 1, 'stdout': "", "stderr": "FAIL"}
         self.mock_remotesshclient.execute.return_value = response
         self.assertRaises(errors.SystemInfoCommandInstallFailed,
-                          ohai_solo.install_remote, self.mock_remotesshclient)
+                          ohai_solo.perform_install, self.mock_remotesshclient)
 
 
 class TestOhaiRemove(utils.TestCase):
