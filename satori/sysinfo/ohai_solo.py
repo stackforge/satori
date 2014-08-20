@@ -69,7 +69,8 @@ def system_info(client):
             "ohai-solo is a linux-only sytem info provider. "
             "Target platform was %s", client.platform_info['dist'])
     else:
-        output = client.execute("sudo -i ohai-solo")
+        command = "unset GEM_CACHE GEM_HOME GEM_PATH && sudo ohai-solo"
+        output = client.execute(command, escalate=True, allow_many=False)
         not_found_msgs = ["command not found", "Could not find ohai"]
         if any(m in k for m in not_found_msgs
                for k in list(output.values()) if isinstance(k,
@@ -107,23 +108,29 @@ def perform_install(client):
             "Target platform was %s", client.platform_info['dist'])
     else:
         # Download to host
-        command = "sudo wget -N http://ohai.rax.io/install.sh"
-        client.execute(command, cwd='/tmp')
+        command = "wget -N http://ohai.rax.io/install.sh"
+        output = client.execute(command, cwd='/tmp', escalate=True,
+                                allow_many=False)
+        LOG.debug("Downloaded ohai-solo | %s", output['stdout'])
 
         # Run install
-        command = "sudo bash install.sh"
-        output = client.execute(command, cwd='/tmp', with_exit_code=True)
+        command = "bash install.sh"
+        install_output = client.execute(command, cwd='/tmp',
+                                        with_exit_code=True,
+                                        escalate=True, allow_many=False)
+        LOG.debug("Ran ohai-solo install script. | %s.",
+                  install_output['stdout'])
 
         # Be a good citizen and clean up your tmp data
-        command = "sudo rm install.sh"
-        client.execute(command, cwd='/tmp')
+        command = "rm install.sh"
+        client.execute(command, cwd='/tmp', escalate=True, allow_many=False)
 
         # Process install command output
-        if output['exit_code'] != 0:
+        if install_output['exit_code'] != 0:
             raise errors.SystemInfoCommandInstallFailed(
-                output['stderr'][:256])
+                install_output['stderr'][:256])
         else:
-            return output
+            return install_output
 
 
 def remove_remote(client):
@@ -142,14 +149,14 @@ def remove_remote(client):
     else:
         platform_info = client.platform_info
         if client.is_debian():
-            remove = "sudo dpkg --purge ohai-solo"
+            remove = "dpkg --purge ohai-solo"
         elif client.is_fedora():
-            remove = "sudo yum -y erase ohai-solo"
+            remove = "yum -y erase ohai-solo"
         else:
             raise errors.UnsupportedPlatform("Unknown distro: %s" %
                                              platform_info['dist'])
         command = "%s" % remove
-        output = client.execute(command, cwd='/tmp')
+        output = client.execute(command, cwd='/tmp', escalate=True)
         return output
 
 
