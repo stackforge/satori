@@ -55,15 +55,18 @@ class TestOhaiInstall(utils.TestCase):
         self.mock_remotesshclient.is_windows.return_value = False
 
     def test_perform_install_fedora(self):
-        response = {'exit_code': 0, 'foo': 'bar'}
+        response = {'exit_code': 0, 'stdout': 'installed remote'}
         self.mock_remotesshclient.execute.return_value = response
         result = ohai_solo.perform_install(self.mock_remotesshclient)
         self.assertEqual(result, response)
         self.assertEqual(self.mock_remotesshclient.execute.call_count, 3)
         self.mock_remotesshclient.execute.assert_has_calls([
-            mock.call('sudo wget -N http://ohai.rax.io/install.sh', cwd='/tmp'),
-            mock.call('sudo bash install.sh', cwd='/tmp', with_exit_code=True),
-            mock.call('sudo rm install.sh', cwd='/tmp')])
+            mock.call('wget -N http://ohai.rax.io/install.sh', cwd='/tmp',
+                      escalate=True, allow_many=False),
+            mock.call('bash install.sh', cwd='/tmp', with_exit_code=True,
+                      escalate=True, allow_many=False),
+            mock.call('rm install.sh', cwd='/tmp', escalate=True,
+                      allow_many=False)])
 
     def test_install_linux_remote_failed(self):
         response = {'exit_code': 1, 'stdout': "", "stderr": "FAIL"}
@@ -87,7 +90,7 @@ class TestOhaiRemove(utils.TestCase):
         result = ohai_solo.remove_remote(self.mock_remotesshclient)
         self.assertEqual(result, response)
         self.mock_remotesshclient.execute.assert_called_once_with(
-            'sudo yum -y erase ohai-solo', cwd='/tmp')
+            'yum -y erase ohai-solo', cwd='/tmp', escalate=True)
 
     def test_remove_remote_debian(self):
         self.mock_remotesshclient.is_debian.return_value = True
@@ -97,7 +100,7 @@ class TestOhaiRemove(utils.TestCase):
         result = ohai_solo.remove_remote(self.mock_remotesshclient)
         self.assertEqual(result, response)
         self.mock_remotesshclient.execute.assert_called_once_with(
-            'sudo dpkg --purge ohai-solo', cwd='/tmp')
+            'dpkg --purge ohai-solo', cwd='/tmp', escalate=True)
 
     def test_remove_remote_unsupported(self):
         self.mock_remotesshclient.is_debian.return_value = False
@@ -121,7 +124,8 @@ class TestSystemInfo(utils.TestCase):
         }
         ohai_solo.system_info(self.mock_remotesshclient)
         self.mock_remotesshclient.execute.assert_called_with(
-            "sudo -i ohai-solo")
+            "unset GEM_CACHE GEM_HOME GEM_PATH && sudo ohai-solo",
+            escalate=True, allow_many=False)
 
     def test_system_info_with_motd(self):
         self.mock_remotesshclient.execute.return_value = {
@@ -130,7 +134,9 @@ class TestSystemInfo(utils.TestCase):
             'stderr': ""
         }
         ohai_solo.system_info(self.mock_remotesshclient)
-        self.mock_remotesshclient.execute.assert_called_with("sudo -i ohai-solo")
+        self.mock_remotesshclient.execute.assert_called_with(
+            "unset GEM_CACHE GEM_HOME GEM_PATH && sudo ohai-solo",
+            escalate=True, allow_many=False)
 
     def test_system_info_bad_json(self):
         self.mock_remotesshclient.execute.return_value = {
