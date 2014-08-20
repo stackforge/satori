@@ -56,6 +56,11 @@ class DiscoveryException(SatoriException):
     """Discovery exception with custom message."""
 
 
+class SatoriDuplicateCommandException(SatoriException):
+
+    """The command cannot be run because it was already found to be running."""
+
+
 class UnsupportedPlatform(DiscoveryException):
 
     """Unsupported operating system or distro."""
