@@ -51,7 +51,7 @@ def get_systeminfo(ipaddress, config, interactive=False):
             return system_info(client)
 
 
-def system_info(client):
+def system_info(client, with_install=False):
     """Run Posh-Ohai on a remote system and gather the output.
 
     :param client: :class:`smb.SMB` instance
@@ -64,6 +64,9 @@ def system_info(client):
         SystemInfoNotJson if `posh-ohai` does not return valid JSON.
         SystemInfoMissingJson if `posh-ohai` does not return any JSON.
     """
+    if with_install:
+        perform_install(client)
+
     if client.is_windows():
         powershell_command = 'Get-ComputerConfiguration'
         output = client.execute(powershell_command)
