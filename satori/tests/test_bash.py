@@ -138,6 +138,39 @@ class TestRemoteShell(TestBashModule):
         self.assertEqual(self.resultdict, resultdict)
 
 
+class TestRemoteShellInit(unittest.TestCase):
+
+    def initpatch(self, SSHInstance, *args, **kwargs):
+        SSHInstance.host = self.host
+        SSHInstance.port = self.port
+        self._instance = SSHInstance
+
+    def setUp(self):
+        self.host = "192.168.2.10"
+        self.port = 23
+        init_patcher = mock.patch.object(
+            bash.ssh.SSH, '__init__', return_value=None,
+            autospec=True, side_effect=self.initpatch)
+        self.mock_init = init_patcher.start()
+        self.addCleanup(init_patcher.stop)
+
+    def test_init_contains_kwargs(self):
+        allkwargs = {
+            'password': 'pass',
+            'username': 'user',
+            'private_key': 'pkey',
+            'key_filename': 'pkeyfile',
+            'port': self.port,
+            'timeout': 100,
+            'gateway': 'g',
+            'options': {'StrictHostKeyChecking': False},
+            'interactive': True,
+            'root_password': 'sudopass',
+        }
+        self.remoteshell = bash.RemoteShell(self.host, **allkwargs)
+        self.mock_init.assert_called_once_with(self._instance, self.host, **allkwargs)
+
+
 class TestContextManager(utils.TestCase):
 
     def setUp(self):
