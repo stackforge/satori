@@ -170,7 +170,7 @@ class RemoteShell(ShellMixin):
     def __init__(self, address, password=None, username=None,
                  private_key=None, key_filename=None, port=None,
                  timeout=None, gateway=None, options=None, interactive=False,
-                 protocol='ssh', **kwargs):
+                 protocol='ssh', root_password=None, **kwargs):
         """An interface for executing shell commands on remote machines.
 
         :param str host:        The ip address or host name of the server
@@ -180,6 +180,10 @@ class RemoteShell(ShellMixin):
         :param username:        The username to authenticate as
         :param private_key:     Private SSH Key string to use
                                 (instead of using a filename)
+        :param root_password:   root user password to be used if username is
+                                not root. This will use username and password
+                                to login and then 'su' to root using
+                                root_password
         :param key_filename:    a private key filename (path)
         :param port:            tcp/ip port to use (defaults to 22)
         :param float timeout:   an optional timeout (in seconds) for the
@@ -213,7 +217,8 @@ class RemoteShell(ShellMixin):
                                        port=port, timeout=timeout,
                                        gateway=gateway,
                                        options=options,
-                                       interactive=interactive)
+                                       interactive=interactive,
+                                       root_password=root_password)
         self.host = self._client.host
         self.port = self._client.port
 
