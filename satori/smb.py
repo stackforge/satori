@@ -9,6 +9,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+# pylint: disable=W0703
 
 """Windows remote client module implemented using psexec.py."""
 
@@ -209,6 +210,8 @@ class SMBClient(object):  # pylint: disable=R0902
                 output += self._get_output()
             self._connected = True
         except Exception:
+            LOG.error("Failed to connect to host %s over smb",
+                      self.host, exc_info=True)
             self.close()
             raise
 
@@ -237,10 +240,10 @@ class SMBClient(object):  # pylint: disable=R0902
                         str(exc))
             del exc
         finally:
-            if self._process:
-                LOG.warning("Killing process: %s", self._process)
-                subprocess.call(['pkill', '-STOP', '-P',
-                                str(self._process.pid)])
+            try:
+                self._process.kill()
+            except OSError:
+                LOG.exception("Tried killing psexec subprocess.")
 
     def remote_execute(self, command, powershell=True, retry=0, **kwargs):
         """Execute a command on a remote host.
