@@ -9,6 +9,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+# pylint: disable=W0703
 
 """Windows remote client module implemented using psexec.py."""
 
@@ -203,12 +204,15 @@ class SMBClient(object):  # pylint: disable=R0902
                 stderr=subprocess.STDOUT,
                 stdin=subprocess.PIPE,
                 close_fds=True,
-                bufsize=0)
+                universal_newlines=True,
+                bufsize=-1)
             output = ''
             while not self._prompt_pattern.findall(output):
                 output += self._get_output()
             self._connected = True
         except Exception:
+            LOG.error("Failed to connect to host %s over smb",
+                      self.host, exc_info=True)
             self.close()
             raise
 
@@ -237,10 +241,10 @@ class SMBClient(object):  # pylint: disable=R0902
                         str(exc))
             del exc
         finally:
-            if self._process:
-                LOG.warning("Killing process: %s", self._process)
-                subprocess.call(['pkill', '-STOP', '-P',
-                                str(self._process.pid)])
+            try:
+                self._process.kill()
+            except OSError:
+                LOG.exception("Tried killing psexec subprocess.")
 
     def remote_execute(self, command, powershell=True, retry=0, **kwargs):
         """Execute a command on a remote host.
@@ -256,19 +260,24 @@ class SMBClient(object):  # pylint: disable=R0902
         if powershell:
             command = ('powershell -EncodedCommand %s' %
                        _posh_encode(command))
+        LOG.info("Executing command: %s", command)
         self._process.stdin.write('%s\n' % command)
+        self._process.stdin.flush()
         try:
             output = self._get_output()
+            LOG.debug("Stdout produced: %s", output)
             output = "\n".join(output.splitlines()[:-1]).strip()
             return output
-        except SubprocessError:
+        except Exception:
+            LOG.error("Error while reading output from command %s on %s",
+                      command, self.host, exc_info=True)
             if not retry:
                 raise
             else:
                 return self.remote_execute(command, powershell=powershell,
                                            retry=retry - 1)
 
-    def _get_output(self, prompt_expected=True, wait=200):
+    def _get_output(self, prompt_expected=True, wait=500):
         """Retrieve output from _process.
 
         This method will wait until output is started to be received and then
@@ -285,16 +294,20 @@ class SMBClient(object):  # pylint: disable=R0902
             # leave loop if underlying process has a return code
             # obviously meaning that it has terminated
             if self._process.poll() is not None:
-                import json
-                error = {"error": tmp_out}
+                if self._process.returncode == 0:
+                    break
+                error = tmp_out
                 raise SubprocessError("subprocess with pid: %s has terminated "
-                                      "unexpectedly with return code: %s\n%s"
+                                      "unexpectedly with return code: %s | %s"
                                       % (self._process.pid,
-                                         self._process.poll(),
-                                         json.dumps(error)))
-            time.sleep(wait / 1000)
+                                         self._process.poll(), error))
+            time.sleep(0)
+            time.sleep(float(wait) / 1000)
+        else:
+            LOG.debug("Loop 1 - stdout read: %s", tmp_out)
+
         stdout = tmp_out
-        while (not tmp_out == '' or
+        while (tmp_out != '' or
                (not self._prompt_pattern.findall(stdout) and
                 prompt_expected)):
             self._file_read.seek(0, 1)
@@ -303,14 +316,18 @@ class SMBClient(object):  # pylint: disable=R0902
             # leave loop if underlying process has a return code
             # obviously meaning that it has terminated
             if self._process.poll() is not None:
-                import json
-                error = {"error": stdout}
+                if self._process.returncode == 0:
+                    break
+                error = tmp_out
                 raise SubprocessError("subprocess with pid: %s has terminated "
-                                      "unexpectedly with return code: %s\n%s"
+                                      "unexpectedly with return code: %s | %s"
                                       % (self._process.pid,
-                                         self._process.poll(),
-                                         json.dumps(error)))
-            time.sleep(wait / 1000)
+                                         self._process.poll(), error))
+            time.sleep(0)
+            time.sleep(float(wait) / 1000)
+        else:
+            LOG.debug("Loop 2 - stdout read: %s", tmp_out)
+
         self._output += stdout
         stdout = stdout.replace('\r', '').replace('\x08', '')
         return stdout
