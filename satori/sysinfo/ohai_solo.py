@@ -111,7 +111,8 @@ def perform_install(client):
             "Target platform was %s", client.platform_info['dist'])
     else:
         # Download to host
-        command = "wget -N http://ohai.rax.io/install.sh"
+        command = ("wget -N http://readonly.configdiscovery.rackspace.com"
+                   "/install.sh")
         output = client.execute(command, cwd='/tmp', escalate=True,
                                 allow_many=False)
         LOG.debug("Downloaded ohai-solo | %s", output['stdout'])
