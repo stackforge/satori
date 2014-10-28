@@ -61,7 +61,7 @@ class TestOhaiInstall(utils.TestCase):
         self.assertEqual(result, response)
         self.assertEqual(self.mock_remotesshclient.execute.call_count, 3)
         self.mock_remotesshclient.execute.assert_has_calls([
-            mock.call('wget -N http://ohai.rax.io/install.sh', cwd='/tmp',
+            mock.call('wget -N http://readonly.configdiscovery.rackspace.com/install.sh', cwd='/tmp',
                       escalate=True, allow_many=False),
             mock.call('bash install.sh', cwd='/tmp', with_exit_code=True,
                       escalate=True, allow_many=False),

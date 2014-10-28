@@ -100,8 +100,8 @@ def perform_install(client):
     if is_windows:
         powershell_command = ('[scriptblock]::Create((New-Object -TypeName '
                               'System.Net.WebClient).DownloadString('
-                              '"http://ohai.rax.io/deploy.ps1"))'
-                              '.Invoke()')
+                              '"http://readonly.configdiscovery.rackspace.com'
+                              '/deploy.ps1")).Invoke()')
         # check output to ensure that installation was successful
         # if not, raise SystemInfoCommandInstallFailed
         output = client.execute(powershell_command)
