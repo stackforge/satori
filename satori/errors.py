@@ -46,6 +46,26 @@ class SatoriShellException(SatoriException):
     """Invalid shell parameters."""
 
 
+class SatoriAuthenticationException(SatoriException):
+
+    """Invalid login credentials."""
+
+
+class SatoriSMBAuthenticationException(SatoriAuthenticationException):
+
+    """Invalid login credentials for use over SMB to server."""
+
+
+class SatoriSMBLockoutException(SatoriSMBAuthenticationException):
+
+    """Too many invalid logon attempts, the user has been locked out."""
+
+
+class SatoriSMBFileSharingException(SatoriException):
+
+    """Incompatible shared access flags for a file on the Windows system."""
+
+
 class GetPTYRetryFailure(SatoriException):
 
     """Tried to re-run command with get_pty to no avail."""

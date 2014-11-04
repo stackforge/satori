@@ -29,6 +29,7 @@ import shlex
 import subprocess
 import tempfile
 
+from satori import errors
 from satori import ssh
 from satori import tunnel
 
@@ -277,6 +278,33 @@ class SMBClient(object):  # pylint: disable=R0902
                 return self.remote_execute(command, powershell=powershell,
                                            retry=retry - 1)
 
+    def _handle_output(self, output):
+        """Check for process termination, exit code, or error messages.
+
+        If the exit code is available and is zero, return True. This rountine
+        will raise an exception in the case of a non-zero exit code.
+        """
+        if self._process.poll() is not None:
+            if self._process.returncode == 0:
+                return True
+            if "The attempted logon is invalid" in output:
+                msg = [k for k in output.splitlines() if k][-1].strip()
+                raise errors.SatoriSMBAuthenticationException(msg)
+            elif "The user account has been automatically locked" in output:
+                msg = [k for k in output.splitlines() if k][-1].strip()
+                raise errors.SatoriSMBLockoutException(msg)
+            elif "cannot be opened because the share access flags" in output:
+                # A file cannot be opened because the share
+                # access flags are incompatible
+                msg = [k for k in output.splitlines() if k][-1].strip()
+                raise errors.SatoriSMBFileSharingException(msg)
+            else:
+                raise SubprocessError("subprocess with pid: %s has "
+                                      "terminated unexpectedly with "
+                                      "return code: %s | %s"
+                                      % (self._process.pid,
+                                         self._process.poll(), output))
+
     def _get_output(self, prompt_expected=True, wait=500):
         """Retrieve output from _process.
 
@@ -293,15 +321,8 @@ class SMBClient(object):  # pylint: disable=R0902
             tmp_out += self._file_read.read()
             # leave loop if underlying process has a return code
             # obviously meaning that it has terminated
-            if self._process.poll() is not None:
-                if self._process.returncode == 0:
-                    break
-                error = tmp_out
-                raise SubprocessError("subprocess with pid: %s has terminated "
-                                      "unexpectedly with return code: %s | %s"
-                                      % (self._process.pid,
-                                         self._process.poll(), error))
-            time.sleep(0)
+            if self._handle_output(tmp_out):
+                break
             time.sleep(float(wait) / 1000)
         else:
             LOG.debug("Loop 1 - stdout read: %s", tmp_out)
@@ -315,15 +336,8 @@ class SMBClient(object):  # pylint: disable=R0902
             stdout += tmp_out
             # leave loop if underlying process has a return code
             # obviously meaning that it has terminated
-            if self._process.poll() is not None:
-                if self._process.returncode == 0:
-                    break
-                error = tmp_out
-                raise SubprocessError("subprocess with pid: %s has terminated "
-                                      "unexpectedly with return code: %s | %s"
-                                      % (self._process.pid,
-                                         self._process.poll(), error))
-            time.sleep(0)
+            if self._handle_output(tmp_out):
+                break
             time.sleep(float(wait) / 1000)
         else:
             LOG.debug("Loop 2 - stdout read: %s", tmp_out)
