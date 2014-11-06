@@ -79,9 +79,13 @@ def system_info(client, with_install=False):
                 results = json.loads(clean_output)
             except ValueError as err:
                 raise errors.SystemInfoNotJson(err)
+            except errors.OutputMissingJson:
+                raise errors.SystemInfoMissingJson(
+                    "System info command returned and does not appear to "
+                    "contain any json-encoded data.")
         return results
     else:
-        raise errors.PlatformNotSupported(
+        raise errors.UnsupportedPlatform(
             "PoSh-Ohai is a Windows-only sytem info provider. "
             "Target platform was %s", client.platform_info['dist'])
 
@@ -105,9 +109,26 @@ def perform_install(client):
         # check output to ensure that installation was successful
         # if not, raise SystemInfoCommandInstallFailed
         output = client.execute(powershell_command)
-        return output
+        unicode_output = "%s" % output
+        breakup = [k.split() for k in unicode_output.splitlines()]
+        breakup = breakup[breakup.index(['Name', 'Value']):]
+        supported, message = None, None
+        for line in breakup:
+            if line[0] == 'Supported' and len(line) == 2:
+                supported = line[1].lower() == 'true'
+            if line[0] == 'PsMessage':
+                message = " ".join(line[1:])
+        if not (supported and message):
+            raise errors.PowerShellVersionDetectionException(
+                "Failed to detect PowerShell version from output: %s."
+                % unicode_output)
+        if not supported:
+            raise errors.PowerShellVersionNotSupported(message)
+        else:
+            LOG.info("PoSh-Ohai Installed: %s", message)
+        return unicode_output
     else:
-        raise errors.PlatformNotSupported(
+        raise errors.UnsupportedPlatform(
             "PoSh-Ohai is a Windows-only sytem info provider. "
             "Target platform was %s", client.platform_info['dist'])
 
@@ -131,7 +152,7 @@ def remove_remote(client):
         output = client.execute(powershell_command)
         return output
     else:
-        raise errors.PlatformNotSupported(
+        raise errors.UnsupportedPlatform(
             "PoSh-Ohai is a Windows-only sytem info provider. "
             "Target platform was %s", client.platform_info['dist'])
 
@@ -151,4 +172,4 @@ def get_json(data):
         return data[first:last + 1]
     except ValueError as exc:
         context = {"ValueError": "%s" % exc}
-        raise errors.SystemInfoMissingJson(context)
+        raise errors.OutputMissingJson(context)
