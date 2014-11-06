@@ -34,29 +34,6 @@ class ShellMixin(object):
 
     """Handle platform detection and define execute command."""
 
-    def execute(self, command, **kwargs):
-        """Execute a (shell) command on the target.
-
-        :param command:         Shell command to be executed
-        :param with_exit_code:  Include the exit_code in the return body.
-        :param cwd:              The child's current directory will be changed
-                                to `cwd` before it is executed. Note that this
-                                directory is not considered when searching the
-                                executable, so you can't specify the program's
-                                path relative to this argument
-        :returns:               a dict with stdin, stdout, and
-                                (optionally), the exit_code of the call
-
-        See SSH.remote_execute(), SMB.remote_execute(), and
-        LocalShell.execute() for client-specific keyword arguments.
-        """
-        pass
-
-    @property
-    def platform_info(self):
-        """Provide distro, version, architecture."""
-        pass
-
     def is_debian(self):
         """Indicate whether the system is Debian based.
 
@@ -219,13 +196,10 @@ class RemoteShell(ShellMixin):
                                        options=options,
                                        interactive=interactive,
                                        root_password=root_password)
-        self.host = self._client.host
-        self.port = self._client.port
 
-    @property
-    def platform_info(self):
-        """Return distro, version, architecture."""
-        return self._client.platform_info
+    def __getattr__(self, attr):
+        """Standard behavior is to access underyling client attrs."""
+        return getattr(self._client, attr)
 
     def __del__(self):
         """Destructor which should close the connection."""
@@ -240,18 +214,6 @@ class RemoteShell(ShellMixin):
         """Context manager close connection."""
         self.close()
 
-    def connect(self):
-        """Connect to the remote host."""
-        return self._client.connect()
-
-    def test_connection(self):
-        """Test the connection to the remote host."""
-        return self._client.test_connection()
-
     def execute(self, command, **kwargs):
         """Execute given command over ssh."""
-        return self._client.remote_execute(command, **kwargs)
-
-    def close(self):
-        """Close the connection to the remote host."""
-        return self._client.close()
+        return self.remote_execute(command, **kwargs)

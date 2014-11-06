@@ -184,6 +184,7 @@ class SMBClient(object):  # pylint: disable=R0902
         via _file_read/_file_write and _process.stdin
         """
         try:
+            output = ''
             if self._connected and self._process:
                 if self._process.poll() is None:
                     return
@@ -207,13 +208,14 @@ class SMBClient(object):  # pylint: disable=R0902
                 close_fds=True,
                 universal_newlines=True,
                 bufsize=-1)
-            output = ''
             while not self._prompt_pattern.findall(output):
                 output += self._get_output()
             self._connected = True
         except Exception:
-            LOG.error("Failed to connect to host %s over smb",
-                      self.host, exc_info=True)
+            msg = "Failed to connect to host %s over smb" % self.host
+            if output:
+                msg = "%s | %s" % (msg, output)
+            LOG.error(msg, exc_info=True)
             self.close()
             raise
 
@@ -247,25 +249,38 @@ class SMBClient(object):  # pylint: disable=R0902
             except OSError:
                 LOG.exception("Tried killing psexec subprocess.")
 
-    def remote_execute(self, command, powershell=True, retry=0, **kwargs):
+    def remote_execute(self, command, powershell=True, retry=1,
+                       prompt_expected=False, wait=500, **kwargs):
         """Execute a command on a remote host.
 
-        :param command:     Command to be executed
-        :param powershell:  If True, command will be interpreted as Powershell
-                            command and therefore converted to base64 and
-                            prepended with 'powershell -EncodedCommand
-        :param int retry:   Number of retries when SubprocessError is thrown
-                            by _get_output before giving up
+        :param command:         Command to be executed
+        :param powershell:      If True, command will be interpreted as
+                                PowerShell command and therefore converted to
+                                base64 and prepended with
+                                'powershell -EncodedCommand'
+        :param int retry:       Number of retries when SubprocessError is
+                                thrown by _get_output before giving up
+        :param prompt_expected: Return only when regular expression defined
+                                in _prompt_pattern is matched (True/False)
+        :param wait:            Time in milliseconds to wait after each
+                                iteration of the loop which reads the output
+                                returned by 'command'.
         """
+        original_command = command
         self.connect()
         if powershell:
-            command = ('powershell -EncodedCommand %s' %
+            command = ('powershell -EncodedCommand %s\n' %
                        _posh_encode(command))
+        self._file_read.flush()
+        self._file_read.read()
         LOG.info("Executing command: %s", command)
-        self._process.stdin.write('%s\n' % command)
+        self._process.stdin.write('\n%s\n' % command)
         self._process.stdin.flush()
         try:
-            output = self._get_output()
+            output = self._get_output(prompt_expected=prompt_expected,
+                                      wait=wait)
+            output = re.compile(
+                r'^[a-zA-Z]:\\.*>.*$', re.MULTILINE).sub('', output)
             LOG.debug("Stdout produced: %s", output)
             output = "\n".join(output.splitlines()[:-1]).strip()
             return output
@@ -275,7 +290,7 @@ class SMBClient(object):  # pylint: disable=R0902
             if not retry:
                 raise
             else:
-                return self.remote_execute(command, powershell=powershell,
+                return self.remote_execute(original_command, powershell=powershell,
                                            retry=retry - 1)
 
     def _handle_output(self, output):
@@ -286,6 +301,8 @@ class SMBClient(object):  # pylint: disable=R0902
         """
         if self._process.poll() is not None:
             if self._process.returncode == 0:
+                LOG.info("Command returned through smb.py"
+                         " with exit status 0.")
                 return True
             if "The attempted logon is invalid" in output:
                 msg = [k for k in output.splitlines() if k][-1].strip()
@@ -305,15 +322,17 @@ class SMBClient(object):  # pylint: disable=R0902
                                       % (self._process.pid,
                                          self._process.poll(), output))
 
-    def _get_output(self, prompt_expected=True, wait=500):
+    def _get_output(self, prompt_expected=False, wait=500):
         """Retrieve output from _process.
 
         This method will wait until output is started to be received and then
         wait until no further output is received within a defined period
-        :param prompt_expected:     only return when regular expression defined
-                                    in _prompt_pattern is matched
-        :param wait:                Time in milliseconds to wait in each of the
-                                    two loops that wait for (more) output.
+
+        :param prompt_expected: Return only when regular expression defined
+                                in _prompt_pattern is matched (True/False)
+        :param wait:            Time in milliseconds to wait after each
+                                iteration of the loop which reads the output
+                                returned by 'command'.
         """
         tmp_out = ''
         while tmp_out == '':

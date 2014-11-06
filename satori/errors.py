@@ -86,6 +86,16 @@ class UnsupportedPlatform(DiscoveryException):
     """Unsupported operating system or distro."""
 
 
+class PowerShellVersionNotSupported(DiscoveryException):
+
+    """The version of PowerShell does not meet requirements."""
+
+
+class PowerShellVersionDetectionException(DiscoveryException):
+
+    """Failed to detect the powershell version."""
+
+
 class SystemInfoCommandMissing(DiscoveryException):
 
     """Command that provides system information is missing."""
@@ -99,6 +109,11 @@ class SystemInfoCommandOld(DiscoveryException):
 class SystemInfoNotJson(DiscoveryException):
 
     """Command did not produce valid JSON."""
+
+
+class OutputMissingJson(DiscoveryException):
+
+    """Output returned contained no json."""
 
 
 class SystemInfoMissingJson(DiscoveryException):
