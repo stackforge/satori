@@ -10,7 +10,7 @@ If you find a problem, please `file a bug`_. Feature additions and design
 discussions are taking place in `blueprints`_. `Reviewing code`_ is an easy way
 to start contributing.
 
-.. _OpenStack Gerrit: https://wiki.openstack.org/wiki/Gerrit_Workflow
+.. _OpenStack Gerrit: http://docs.openstack.org/infra/manual/developers.html#development-workflow
 .. _GitHub: https://github.com/stackforge/satori
 .. _file a bug: https://bugs.launchpad.net/satori
 .. _blueprints: https://blueprints.launchpad.net/satori
