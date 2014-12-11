@@ -51,6 +51,18 @@ TTY_REQUIRED = [
 ]
 
 
+def shellquote(s):
+    r"""Quote a string for use on a command line.
+
+    This wraps the string in single-quotes and converts any existing
+    single-quotes to r"'\''". Here the first single-quote ends the
+    previous quoting, the escaped single-quote becomes a literal
+    single-quote, and the last single-quote quotes the next part of
+    the string.
+    """
+    return "'%s'" % s.replace("'", r"'\''")
+
+
 def make_pkey(private_key):
     """Return a paramiko.pkey.PKey from private key string."""
     key_classes = [paramiko.rsakey.RSAKey,
@@ -179,7 +191,7 @@ class SSH(paramiko.SSHClient):  # pylint: disable=R0902
                 utils.get_platform_info)
             platform_command += ("\nsys.stdout.write(str("
                                  "get_platform_info()))\n")
-            command = 'echo -e """%s""" | python' % platform_command
+            command = 'echo %s | python' % shellquote(platform_command)
             output = self.remote_execute(command)
             stdout = re.split('\n|\r\n', output['stdout'])[-1].strip()
             if stdout:
