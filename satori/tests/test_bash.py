@@ -39,7 +39,7 @@ class TestLocalShell(TestBashModule):
 
     def setUp(self):
         super(TestLocalShell, self).setUp()
-        popen_patcher = mock.patch.object(bash.subprocess, 'Popen')
+        popen_patcher = mock.patch.object(bash.popen, 'popen')
         self.mock_popen = popen_patcher.start()
         mock_result = mock.MagicMock()
         mock_result.returncode = self.testrun.returncode
