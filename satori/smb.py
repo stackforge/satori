@@ -26,9 +26,9 @@ import logging
 import os
 import re
 import shlex
-import subprocess
 import tempfile
 
+from satori.common import popen
 from satori import errors
 from satori import ssh
 from satori import tunnel
@@ -199,11 +199,11 @@ class SMBClient(object):  # pylint: disable=R0902
                 self.username,
                 self.password,
                 self.host)
-            self._process = subprocess.Popen(
+            self._process = popen.popen(
                 shlex.split(self._substituted_command),
                 stdout=self._file_write,
-                stderr=subprocess.STDOUT,
-                stdin=subprocess.PIPE,
+                stderr=popen.STDOUT,
+                stdin=popen.PIPE,
                 close_fds=True,
                 universal_newlines=True,
                 bufsize=-1)
