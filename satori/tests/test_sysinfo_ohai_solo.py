@@ -68,6 +68,39 @@ class TestOhaiInstall(utils.TestCase):
             mock.call('rm install.sh', cwd='/tmp', escalate=True,
                       allow_many=False)])
 
+    def test_perform_install_with_install_dir(self):
+        response = {'exit_code': 0, 'stdout': 'installed remote'}
+        self.mock_remotesshclient.execute.return_value = response
+        result = ohai_solo.perform_install(self.mock_remotesshclient,
+                                           install_dir='/home/bob')
+        self.assertEqual(result, response)
+        self.assertEqual(self.mock_remotesshclient.execute.call_count, 3)
+        self.mock_remotesshclient.execute.assert_has_calls([
+            mock.call('wget -N http://readonly.configdiscovery.'
+                      'rackspace.com/install.sh', cwd='/tmp',
+                      escalate=True, allow_many=False),
+            mock.call('bash install.sh -t -i /home/bob', cwd='/tmp',
+                      with_exit_code=True, escalate=True, allow_many=False),
+            mock.call('rm install.sh', cwd='/tmp', escalate=True,
+                      allow_many=False)])
+
+    def test_perform_install_with_install_dir_and_spaces(self):
+        response = {'exit_code': 0, 'stdout': 'installed remote'}
+        self.mock_remotesshclient.execute.return_value = response
+        result = ohai_solo.perform_install(self.mock_remotesshclient,
+                                           install_dir='/srv/a diff * dir')
+        self.assertEqual(result, response)
+        self.assertEqual(self.mock_remotesshclient.execute.call_count, 3)
+        self.mock_remotesshclient.execute.assert_has_calls([
+            mock.call('wget -N http://readonly.configdiscovery.'
+                      'rackspace.com/install.sh', cwd='/tmp',
+                      escalate=True, allow_many=False),
+            mock.call('bash install.sh -t -i \'/srv/a diff * dir\'',
+                      cwd='/tmp', with_exit_code=True, escalate=True,
+                      allow_many=False),
+            mock.call('rm install.sh', cwd='/tmp', escalate=True,
+                      allow_many=False)])
+
     def test_install_linux_remote_failed(self):
         response = {'exit_code': 1, 'stdout': "", "stderr": "FAIL"}
         self.mock_remotesshclient.execute.return_value = response
@@ -108,6 +141,28 @@ class TestOhaiRemove(utils.TestCase):
         self.assertRaises(errors.UnsupportedPlatform,
                           ohai_solo.remove_remote, self.mock_remotesshclient)
 
+    def test_remove_remote_with_install_dir(self):
+        self.mock_remotesshclient.is_debian.return_value = True
+        self.mock_remotesshclient.is_fedora.return_value = False
+        response = {'exit_code': 0, 'foo': 'bar'}
+        self.mock_remotesshclient.execute.return_value = response
+        result = ohai_solo.remove_remote(self.mock_remotesshclient,
+                                         install_dir='/home/srv')
+        self.assertEqual(result, response)
+        self.mock_remotesshclient.execute.assert_called_once_with(
+            'rm -rf /home/srv/ohai-solo/', cwd='/tmp', escalate=True)
+
+    def test_remove_remote_with_install_dir_and_spaces(self):
+        self.mock_remotesshclient.is_debian.return_value = True
+        self.mock_remotesshclient.is_fedora.return_value = False
+        response = {'exit_code': 0, 'foo': 'bar'}
+        self.mock_remotesshclient.execute.return_value = response
+        result = ohai_solo.remove_remote(self.mock_remotesshclient,
+                                         install_dir='/srv/a dir')
+        self.assertEqual(result, response)
+        self.mock_remotesshclient.execute.assert_called_once_with(
+            'rm -rf \'/srv/a dir/ohai-solo/\'', cwd='/tmp', escalate=True)
+
 
 class TestSystemInfo(utils.TestCase):
 
@@ -124,7 +179,34 @@ class TestSystemInfo(utils.TestCase):
         }
         ohai_solo.system_info(self.mock_remotesshclient)
         self.mock_remotesshclient.execute.assert_called_with(
-            "unset GEM_CACHE GEM_HOME GEM_PATH && sudo ohai-solo",
+            "unset GEM_CACHE GEM_HOME GEM_PATH && "
+            "sudo /opt/ohai-solo/bin/ohai-solo",
+            escalate=True, allow_many=False)
+
+    def test_system_info_with_install_dir(self):
+        self.mock_remotesshclient.execute.return_value = {
+            'exit_code': 0,
+            'stdout': "{}",
+            'stderr': ""
+        }
+        ohai_solo.system_info(self.mock_remotesshclient,
+                              install_dir='/home/user')
+        self.mock_remotesshclient.execute.assert_called_with(
+            "unset GEM_CACHE GEM_HOME GEM_PATH && "
+            "sudo /home/user/ohai-solo/bin/ohai-solo",
+            escalate=True, allow_many=False)
+
+    def test_system_info_with_install_dir_with_spaces(self):
+        self.mock_remotesshclient.execute.return_value = {
+            'exit_code': 0,
+            'stdout': "{}",
+            'stderr': ""
+        }
+        ohai_solo.system_info(self.mock_remotesshclient,
+                              install_dir='/sys/omg * " lol/')
+        self.mock_remotesshclient.execute.assert_called_with(
+            "unset GEM_CACHE GEM_HOME GEM_PATH && "
+            'sudo \'/sys/omg * " lol/\'/ohai-solo/bin/ohai-solo',
             escalate=True, allow_many=False)
 
     def test_system_info_with_motd(self):
@@ -135,7 +217,8 @@ class TestSystemInfo(utils.TestCase):
         }
         ohai_solo.system_info(self.mock_remotesshclient)
         self.mock_remotesshclient.execute.assert_called_with(
-            "unset GEM_CACHE GEM_HOME GEM_PATH && sudo ohai-solo",
+            "unset GEM_CACHE GEM_HOME GEM_PATH && "
+            "sudo /opt/ohai-solo/bin/ohai-solo",
             escalate=True, allow_many=False)
 
     def test_system_info_bad_json(self):
@@ -173,7 +256,6 @@ class TestSystemInfo(utils.TestCase):
         }
         self.assertRaises(errors.SystemInfoCommandMissing,
                           ohai_solo.system_info, self.mock_remotesshclient)
-
 
 if __name__ == "__main__":
     unittest.main()
