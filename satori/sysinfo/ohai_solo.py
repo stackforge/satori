@@ -51,10 +51,12 @@ def get_systeminfo(ipaddress, config, interactive=False):
             return system_info(client)
 
 
-def system_info(client, with_install=False):
+def system_info(client, with_install=False, install_dir=None):
     """Run ohai-solo on a remote system and gather the output.
 
     :param client: :class:`ssh.SSH` instance
+    :param with_install Will install ohai-solo if set to True
+    :param install_dir string containing directory to install to
     :returns: dict -- system information from ohai-solo
     :raises: SystemInfoCommandMissing, SystemInfoCommandOld, SystemInfoNotJson
              SystemInfoMissingJson
@@ -65,37 +67,46 @@ def system_info(client, with_install=False):
         SystemInfoMissingJson if `ohai` does not return any JSON.
     """
     if with_install:
-        perform_install(client)
+        perform_install(client, install_dir=install_dir)
 
     if client.is_windows():
         raise errors.UnsupportedPlatform(
             "ohai-solo is a linux-only sytem info provider. "
             "Target platform was %s", client.platform_info['dist'])
-    else:
-        command = "unset GEM_CACHE GEM_HOME GEM_PATH && sudo ohai-solo"
-        output = client.execute(command, escalate=True, allow_many=False)
-        not_found_msgs = ["command not found", "Could not find ohai"]
-        if any(m in k for m in not_found_msgs
-               for k in list(output.values()) if isinstance(k,
-                                                            six.string_types)):
-            LOG.warning("SystemInfoCommandMissing on host: [%s]", client.host)
-            raise errors.SystemInfoCommandMissing("ohai-solo missing on %s" %
-                                                  client.host)
-        # use string formatting to handle unicode
-        unicode_output = "%s" % output['stdout']
+
+    ohai_solo_prefix = (install_dir or '/opt')
+    ohai_solo_command = six.moves.shlex_quote("%s/ohai-solo/bin/ohai-solo"
+                                              % ohai_solo_prefix)
+    command = ("unset GEM_CACHE GEM_HOME GEM_PATH && "
+               "sudo %s" % ohai_solo_command)
+
+    output = client.execute(command, escalate=True, allow_many=False)
+    not_found_msgs = ["command not found", "Could not find ohai"]
+    if any(m in k for m in not_found_msgs
+           for k in list(output.values()) if isinstance(k,
+                                                        six.string_types)):
+        LOG.warning("SystemInfoCommandMissing on host: [%s]", client.host)
+        raise errors.SystemInfoCommandMissing("ohai-solo missing on %s" %
+                                              client.host)
+    # use string formatting to handle unicode
+    unicode_output = "%s" % output['stdout']
+    try:
+        results = json.loads(unicode_output)
+    except ValueError as exc:
         try:
-            results = json.loads(unicode_output)
+            clean_output = get_json(unicode_output)
+            results = json.loads(clean_output)
         except ValueError as exc:
-            try:
-                clean_output = get_json(unicode_output)
-                results = json.loads(clean_output)
-            except ValueError as exc:
-                raise errors.SystemInfoNotJson(exc)
-        return results
+            raise errors.SystemInfoNotJson(exc)
+    return results
 
 
-def perform_install(client):
-    """Install ohai-solo on remote system."""
+def perform_install(client, install_dir=None):
+    """Install ohai-solo on remote system.
+
+    :param client: :class:`ssh.SSH` instance
+    :param install_dir string containing directory to install to
+    """
     LOG.info("Installing (or updating) ohai-solo on device %s at %s:%d",
              client.host, client.host, client.port)
 
@@ -119,6 +130,10 @@ def perform_install(client):
 
         # Run install
         command = "bash install.sh"
+        if install_dir:
+            command = "%s -t -i %s" % (command,
+                                       six.moves.shlex_quote(install_dir))
+
         install_output = client.execute(command, cwd='/tmp',
                                         with_exit_code=True,
                                         escalate=True, allow_many=False)
@@ -137,9 +152,10 @@ def perform_install(client):
             return install_output
 
 
-def remove_remote(client):
+def remove_remote(client, install_dir=None):
     """Remove ohai-solo from specifc remote system.
 
+    :param install_dir string containing directory ohai-solo was installed in
     Currently supports:
         - ubuntu [10.x, 12.x]
         - debian [6.x, 7.x]
@@ -152,7 +168,10 @@ def remove_remote(client):
             "Target platform was %s", client.platform_info['dist'])
     else:
         platform_info = client.platform_info
-        if client.is_debian():
+        if install_dir is not None:
+            install_dir = six.moves.shlex_quote("%s/ohai-solo/" % install_dir)
+            remove = 'rm -rf %s' % install_dir
+        elif client.is_debian():
             remove = "dpkg --purge ohai-solo"
         elif client.is_fedora():
             remove = "yum -y erase ohai-solo"
