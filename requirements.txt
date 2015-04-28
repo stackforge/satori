@@ -6,6 +6,6 @@ paramiko>=1.12.0            # ecdsa added
 pbr>=0.5.21,<1.0
 python-novaclient>=2.6.0.1  # breaks before
 pythonwhois>=2.4.3
-six>=1.4.0                  # urllib introduced
+six>=1.8.0                  # Required for shlex
 tldextract>=1.2
 argparse
