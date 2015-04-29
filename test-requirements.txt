@@ -8,7 +8,7 @@ flake8_docstrings>=0.2.0      # patched for py33
 fixtures>=0.3.14
 freezegun
 mock>=1.0
-pep8>=1.5.7
+pep8>=1.5.7,<1.6
 pep257>=0.3.2                 # patched for py33
 sphinx>=1.2.2
 testrepository>=0.0.17

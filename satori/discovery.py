@@ -27,7 +27,7 @@ import sys
 import traceback
 
 import ipaddress
-from novaclient.v1_1 import client
+import novaclient.v1_1
 from pythonwhois import shared
 import six
 
@@ -128,12 +128,12 @@ def discover_host(address, config, interactive=False):
 
 def find_nova_host(address, config):
     """See if a nova instance has the supplied address."""
-    nova = client.Client(config['username'],
-                         config['password'],
-                         config['tenant_id'],
-                         config['authurl'],
-                         region_name=config['region'],
-                         service_type="compute")
+    nova = novaclient.v1_1.client.Client(config['username'],
+                                         config['password'],
+                                         config['tenant_id'],
+                                         config['authurl'],
+                                         region_name=config['region'],
+                                         service_type="compute")
     for server in nova.servers.list():
         for network_addresses in six.itervalues(server.addresses):
             for ip_address in network_addresses:
