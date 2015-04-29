@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-""" Popen wrapper to allow custom patching of subprocess.Popen."""
+"""Popen wrapper to allow custom patching of subprocess.Popen."""
 
 import subprocess
 

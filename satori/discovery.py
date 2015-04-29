@@ -27,7 +27,7 @@ import sys
 import traceback
 
 import ipaddress
-from novaclient.v1_1 import client
+from novaclient import client
 from pythonwhois import shared
 import six
 
