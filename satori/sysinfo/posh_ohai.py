@@ -67,7 +67,8 @@ def system_info(client, with_install=False):
         perform_install(client)
 
     if client.is_windows():
-        powershell_command = 'Get-ComputerConfiguration'
+        powershell_command = ('Import-Module Posh-Ohai;'
+                              'Get-ComputerConfiguration')
         output = client.execute(powershell_command)
         unicode_output = "%s" % output
         load_clean_json = lambda output: json.loads(get_json(output))
