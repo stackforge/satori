@@ -38,7 +38,8 @@ class TestSystemInfo(utils.TestCase):
     def test_system_info(self):
         self.client.execute.return_value = "{}"
         posh_ohai.system_info(self.client)
-        self.client.execute.assert_called_with("Get-ComputerConfiguration")
+        self.client.execute.assert_called_with("Import-Module -Name Posh-Ohai;"
+                                               "Get-ComputerConfiguration")
 
     def test_system_info_json(self):
         self.client.execute.return_value = '{"foo": 123}'
