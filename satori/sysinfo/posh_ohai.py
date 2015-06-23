@@ -52,10 +52,11 @@ def get_systeminfo(ipaddress, config, interactive=False):
             return system_info(client)
 
 
-def system_info(client, with_install=False):
+def system_info(client, with_install=False, install_dir=None):
     """Run Posh-Ohai on a remote system and gather the output.
 
     :param client: :class:`smb.SMB` instance
+    :param install_dir -- this is for compatibility and is ignored
     :returns: dict -- system information from PoSh-Ohai
     :raises: SystemInfoCommandMissing, SystemInfoCommandOld, SystemInfoInvalid
 
@@ -85,8 +86,11 @@ def system_info(client, with_install=False):
             "Target platform was %s", client.platform_info['dist'])
 
 
-def perform_install(client):
-    """Install PoSh-Ohai on remote system."""
+def perform_install(client, install_dir=None):
+    """Install PoSh-Ohai on remote system.
+
+    :param install_dir -- For compatibility. Ignored.
+    """
     LOG.info("Installing (or updating) PoSh-Ohai on device %s at %s:%d",
              client.host, client.host, client.port)
 
@@ -111,8 +115,10 @@ def perform_install(client):
             "Target platform was %s", client.platform_info['dist'])
 
 
-def remove_remote(client):
+def remove_remote(client, install_dir=None):
     """Remove PoSh-Ohai from specifc remote system.
+
+    :param install_dir -- for compatibility. Ignored.
 
     Currently supports:
         - ubuntu [10.x, 12.x]
