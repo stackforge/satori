@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Ryan Walker <ryan.walker@rackspace.com>
+Workflow+1: Ryan Walker <ryan.walker@rackspace.com>
+Code-Review+1: Samuel Stavinoha <samuel.stavinoha@rackspace.com>
+Workflow+1: Samuel Stavinoha <samuel.stavinoha@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 24 Jun 2015 18:45:24 +0000
+Reviewed-on: https://review.openstack.org/194720
+Project: stackforge/satori
+Branch: refs/heads/master
