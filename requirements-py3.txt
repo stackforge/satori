@@ -1,8 +1,0 @@
-iso8601>=0.1.5
-Jinja2>=2.7.1
-paramiko>=1.13.0             # py33 support
-pbr>=0.5.21,<1.0
-python-novaclient>=2.15.0    # py33 support
-pythonwhois>=2.1.0           # py33 support
-six>=1.8.0
-tldextract>=1.2

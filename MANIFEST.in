@@ -1,5 +1,0 @@
-graft satori/formats
-include setup.py
-include setup.cfg
-prune satori/tests
-global-exclude *.pyc *.sdx *.log *.db *.swp
